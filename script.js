@@ -1,454 +1,475 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH HIGH-RES APP LOGOS & FULL AUTH PAGE
+   LUROVA OTT - MOBILE-OPTIMIZED MASTER STYLESHEET
    ========================================================================== */
 
-const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
-
-let selectedApp = null;
-let currentDuration = 'monthly';
-let selectedTier = null;
-let currentUser = null;
-
-// Multi-Language Support
-const translations = {
-  en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Official Accounts • Instant 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Quick Commerce", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
-  hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
-  bn: { nav_home: "হোম", nav_plans: "সাবস্ক্রিপশন", auth_btn: "লগইন করুন", search_btn: "সন্ধান করুন" },
-  ta: { nav_home: "முகப்பு", nav_plans: "சந்தாக்கள்", auth_btn: "உள்நுழைவு", search_btn: "தேடு" },
-  te: { nav_home: "హోమ్", nav_plans: "సబ్‌స్క్రిప్షన్‌లు", auth_btn: "లాగిన్", search_btn: "శోధించండి" },
-  mr: { nav_home: "मुख्य पृष्ठ", nav_plans: "सब्सक्रिप्शन", auth_btn: "लॉगिन करा", search_btn: "शोधा" }
-};
-
-// Verified High-Resolution & Scaled Image Vectors for 20+ Platforms
-const platformsData = [
-  {
-    id: "netflix",
-    name: "Netflix Premium",
-    category: "ott",
-    logo: "https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png",
-    description: "Stream unlimited Movies, TV shows & 4K Ultra HD Originals.",
-    plans: {
-      monthly: [
-        { name: "Mobile (480p) - 1 Screen", original: 149, features: "Phone & Tablet Stream" },
-        { name: "Basic (720p) - 1 Screen", original: 199, features: "HD Stream on TV & Laptop" },
-        { name: "Standard (1080p) - 2 Screens", original: 499, features: "Full HD, 2 Devices Sync" },
-        { name: "Premium (4K UHD) - 4 Screens", original: 649, features: "Ultra HD 4K, Spatial Audio" }
-      ],
-      yearly: [
-        { name: "Standard (1080p) - Annual", original: 4990, features: "Full HD, 2 Devices 12 Months" },
-        { name: "Premium (4K UHD) - Annual", original: 6490, features: "Ultra HD 4K, 4 Devices 12 Months" }
-      ]
-    }
-  },
-  {
-    id: "prime",
-    name: "Amazon Prime Video",
-    category: "ott",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",
-    description: "Includes Prime Video, Free Fast Delivery & Prime Music.",
-    plans: {
-      monthly: [
-        { name: "Prime Video Mobile Edition", original: 149, features: "Single Mobile Screen" },
-        { name: "Prime Full Monthly", original: 299, features: "4K UHD Video + Shopping Perks" }
-      ],
-      yearly: [
-        { name: "Prime Full Annual Pass", original: 1499, features: "1 Full Year Prime Access" }
-      ]
-    }
-  },
-  {
-    id: "jiohotstar",
-    name: "JioStar / Hotstar",
-    category: "ott",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/12/Disney%2B_Hotstar_logo.svg",
-    description: "Live Cricket, Premier League, Marvel, Disney & HBO Shows.",
-    plans: {
-      monthly: [
-        { name: "Super Plan (1080p)", original: 299, features: "Full HD, 2 Screens" },
-        { name: "Premium Plan (4K)", original: 499, features: "4K UHD, 4 Screens Ad-Free" }
-      ],
-      yearly: [
-        { name: "Super Annual Plan", original: 899, features: "1 Year, 2 Devices" },
-        { name: "Premium Annual Plan", original: 1499, features: "1 Year, 4K UHD 4 Devices" }
-      ]
-    }
-  },
-  {
-    id: "spotify",
-    name: "Spotify Premium",
-    category: "music",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg",
-    description: "Listen to 100M+ songs ad-free with offline downloads.",
-    plans: {
-      monthly: [
-        { name: "Individual Premium", original: 119, features: "1 Account, Unlimited Skips" },
-        { name: "Duo Premium", original: 149, features: "2 Accounts for Couples" }
-      ],
-      yearly: [
-        { name: "Individual 12-Month Pass", original: 1189, features: "Full Year Music Access" }
-      ]
-    }
-  },
-  {
-    id: "youtube",
-    name: "YouTube Premium",
-    category: "music",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
-    description: "Ad-free YouTube videos, Background Play & YouTube Music.",
-    plans: {
-      monthly: [
-        { name: "Individual Monthly", original: 149, features: "Ad-Free + Background Play" },
-        { name: "Family Plan (5 Members)", original: 299, features: "Share with 5 Family Members" }
-      ],
-      yearly: [
-        { name: "Individual 12-Month Pass", original: 1490, features: "Full Year Uninterrupted Videos" }
-      ]
-    }
-  },
-  {
-    id: "adobe",
-    name: "Adobe Creative Cloud",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Creative_Cloud_logo.svg",
-    description: "20+ Creative Desktop & Mobile Apps including Photoshop.",
-    plans: {
-      monthly: [
-        { name: "Photoshop Single App", original: 1650, features: "Photoshop + 100GB Cloud" },
-        { name: "All Apps Suite + Generative AI", original: 4230, features: "Photoshop, Premiere, After Effects" }
-      ],
-      yearly: [
-        { name: "All Apps Suite Prepaid Year", original: 46000, features: "12 Months Enterprise Access" }
-      ]
-    }
-  },
-  {
-    id: "googleone",
-    name: "Google One Storage",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_One_logo.svg",
-    description: "Cloud Storage across Drive, Photos & Gmail + Premium Support.",
-    plans: {
-      monthly: [
-        { name: "Basic 100 GB Plan", original: 130, features: "100 GB Storage + Family Sharing" },
-        { name: "Standard 200 GB Plan", original: 210, features: "200 GB Cloud Storage" },
-        { name: "Premium 2 TB Plan", original: 650, features: "2 TB Storage + Meet Perks" }
-      ],
-      yearly: [
-        { name: "Basic 100 GB Annual", original: 1300, features: "1 Year Cloud Backup" }
-      ]
-    }
-  },
-  {
-    id: "swiggione",
-    name: "Swiggy One Pass",
-    category: "delivery",
-    logo: "https://upload.wikimedia.org/wikipedia/en/1/12/Swiggy_logo.svg",
-    description: "Free Deliveries on Food, Instamart & Dineout Discounts.",
-    plans: {
-      monthly: [
-        { name: "Swiggy One Full Access", original: 299, features: "Free Food & Instamart Deliveries" }
-      ],
-      yearly: [
-        { name: "Swiggy One Annual Membership", original: 899, features: "365 Days Unlimited Free Delivery" }
-      ]
-    }
-  },
-  {
-    id: "zepto",
-    name: "Zepto Pass",
-    category: "delivery",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/87/Zepto_Logo.png",
-    description: "Unlimited Free Deliveries under 10 mins + Extra Discounts.",
-    plans: {
-      monthly: [{ name: "Zepto Pass Monthly", original: 99, features: "Free Delivery on orders above ₹99" }],
-      yearly: [{ name: "Zepto Pass Annual Pass", original: 799, features: "1 Year Grocery Savings Pass" }]
-    }
-  },
-  {
-    id: "apple",
-    name: "Apple One Bundle",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
-    description: "Apple Music, Apple TV+, Apple Arcade & iCloud Storage.",
-    plans: {
-      monthly: [
-        { name: "Apple Individual Bundle", original: 195, features: "Music, TV+, Arcade + 50GB iCloud" },
-        { name: "Apple Family Bundle", original: 365, features: "Share with 5 Members + 200GB iCloud" }
-      ],
-      yearly: [
-        { name: "Apple Individual Annual", original: 2200, features: "1 Year Apple Suite" }
-      ]
-    }
-  },
-  {
-    id: "telegram",
-    name: "Telegram Premium",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg",
-    description: "4GB Upload limits, Faster Downloads & Voice-to-Text.",
-    plans: {
-      monthly: [{ name: "Telegram Premium Monthly", original: 179, features: "Double Limits + Badges" }],
-      yearly: [{ name: "Telegram Premium Yearly", original: 1490, features: "33% Extra Annual Savings" }]
-    }
-  },
-  {
-    id: "meta",
-    name: "Meta Verified Badge",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
-    description: "Blue Verification Badge for Instagram & Facebook.",
-    plans: {
-      monthly: [{ name: "Meta Verified Monthly", original: 699, features: "Verified Badge + Direct Support" }],
-      yearly: [{ name: "Meta Verified Annual Pass", original: 7500, features: "1 Year Guaranteed Badge" }]
-    }
-  }
-];
-
-// Discount Calculation
-function calcDiscount(orig) {
-  return Math.round(orig * 0.70);
+/* --- Dark Theme Variables (Default) --- */
+body.dark-theme {
+  --bg-main: #090b0e;
+  --bg-card: rgba(18, 22, 31, 0.85);
+  --bg-card-hover: rgba(28, 35, 50, 0.95);
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --ambient-opacity: 0.55;
+  --logo-box-bg: rgba(255, 255, 255, 0.03);
 }
 
-// Render Platform Catalog Grid
-function renderCatalog(filter = 'all', searchQuery = '') {
-  const grid = document.getElementById('plansGrid');
-  grid.innerHTML = '';
-
-  const filtered = platformsData.filter(app => {
-    const matchesCat = filter === 'all' || app.category === filter;
-    const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          app.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
-
-  if(filtered.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 3rem; color:var(--text-muted)">
-      <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; margin-bottom: 1rem;"></i>
-      <p>No matching platform found. Try another search term!</p>
-    </div>`;
-    return;
-  }
-
-  filtered.forEach(app => {
-    const samplePlan = app.plans.monthly[0];
-    const discountedPrice = calcDiscount(samplePlan.original);
-
-    const card = document.createElement('div');
-    card.className = 'plan-card';
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="logo-box">
-          <img src="${app.logo}" alt="${app.name}" class="platform-logo" />
-        </div>
-        <span class="discount-tag">30% OFF</span>
-      </div>
-      <div>
-        <h3 class="platform-name">${app.name}</h3>
-        <p class="platform-desc">${app.description}</p>
-        <div class="price-box">
-          <span class="starting-text">Starting From</span>
-          <div class="price-row">
-            <span class="discount-price">₹${discountedPrice}</span>
-            <span class="original-price">₹${samplePlan.original}</span>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-primary full-width" onclick="openPlanModal('${app.id}')">
-        Select Plan Option
-      </button>
-
-      <img src="${app.logo}" class="faded-app-bg" alt="" />
-    `;
-    grid.appendChild(card);
-  });
+/* --- Light Theme Variables --- */
+body.light-theme {
+  --bg-main: #f4f6f9;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --bg-card-hover: #ffffff;
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --border-glass: rgba(0, 0, 0, 0.12);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --ambient-opacity: 0.18;
+  --logo-box-bg: rgba(0, 0, 0, 0.03);
 }
 
-// Search and Category Filters
-function filterPlans(cat) {
-  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
-  const searchVal = document.getElementById('searchInput').value;
-  renderCatalog(cat, searchVal);
+:root {
+  --primary-glow: #6366f1;
+  --secondary-glow: #a855f7;
+  --accent-pink: #ec4899;
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-function handleSearch() {
-  const searchVal = document.getElementById('searchInput').value;
-  renderCatalog('all', searchVal);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
-// Plan Options Modal System
-function openPlanModal(appId) {
-  selectedApp = platformsData.find(a => a.id === appId);
-  currentDuration = 'monthly';
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  min-height: 100vh;
+  width: 100%;
+}
+
+body.no-scroll {
+  overflow: hidden;
+}
+
+/* --- Ambient Orbs --- */
+.ambient-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(130px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--ambient-opacity);
+  transition: opacity 0.4s ease;
+}
+
+.glow-1 { width: 450px; height: 450px; background: var(--primary-glow); top: -100px; left: -100px; }
+.glow-2 { width: 500px; height: 500px; background: var(--secondary-glow); top: 35%; right: -150px; }
+.glow-3 { width: 350px; height: 350px; background: var(--accent-pink); bottom: 10%; left: 20%; }
+
+/* --- Text Gradients --- */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 4s linear infinite;
+}
+
+@keyframes shine { to { background-position: 200% center; } }
+
+/* --- Navbar --- */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(10, 12, 16, 0.7);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
+
+.nav-container {
+  max-width: 1280px; margin: 0 auto;
+  padding: 0.8rem 1.2rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.logo { display: flex; align-items: center; gap: 8px; font-size: 1.35rem; font-weight: 800; }
+.logo-icon { color: var(--primary-glow); }
+.logo-text .highlight { color: var(--accent-pink); }
+
+.mobile-hamburger {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0.4rem;
+}
+
+.nav-links { display: flex; list-style: none; gap: 1.5rem; }
+.nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+.nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+
+.nav-actions { display: flex; gap: 0.6rem; align-items: center; }
+
+/* --- Buttons --- */
+.btn {
+  padding: 0.6rem 1.1rem; border-radius: var(--radius-md);
+  font-weight: 600; cursor: pointer; border: none; outline: none;
+  transition: var(--transition-smooth);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 0.88rem;
+  min-height: 42px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
+  color: #fff; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(168, 85, 247, 0.5);
+}
+
+.btn-outline {
+  background: transparent; color: var(--text-main);
+  border: 1px solid var(--border-glass);
+}
+
+.btn-icon { background: var(--bg-card); border: 1px solid var(--border-glass); color: var(--text-main); padding: 0.6rem; min-width: 42px; }
+.btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; min-height: 36px; }
+.full-width { width: 100%; }
+
+/* --- Hero & Search --- */
+.hero { padding: 3rem 1.2rem 2.5rem; text-align: center; max-width: 900px; margin: 0 auto; }
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8; padding: 6px 14px; border-radius: 50px; font-size: 0.78rem; font-weight: 600; margin-bottom: 1.2rem;
+}
+
+.hero-title { font-size: clamp(2.1rem, 6vw, 3.2rem); font-weight: 800; line-height: 1.25; margin-bottom: 1rem; }
+.hero-subtitle { color: var(--text-muted); font-size: clamp(0.9rem, 2.5vw, 1.05rem); line-height: 1.6; margin-bottom: 2rem; }
+
+.search-container {
+  position: relative; max-width: 600px; margin: 0 auto 2.5rem;
+  display: flex; align-items: center; width: 100%;
+}
+
+.search-icon { position: absolute; left: 18px; color: var(--text-muted); font-size: 1rem; }
+.search-container input {
+  width: 100%; padding: 0.95rem 110px 0.95rem 48px;
+  background: var(--bg-card); border: 1px solid var(--border-glass);
+  border-radius: 50px; color: var(--text-main); font-size: 0.92rem; outline: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: var(--transition-smooth);
+}
+
+.search-container input:focus { border-color: var(--primary-glow); }
+.search-btn { position: absolute; right: 6px; border-radius: 50px; padding: 0.55rem 1.2rem; height: calc(100% - 12px); }
+
+.hero-stats { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border-glass);
+  padding: 1rem 1.5rem; border-radius: var(--radius-lg); backdrop-filter: blur(10px); flex: 1 1 120px;
+}
+
+.stat-card h3 { font-size: 1.4rem; font-weight: 800; }
+.stat-card p { font-size: 0.75rem; color: var(--text-muted); }
+
+/* --- Catalog Grid --- */
+.catalog-section { max-width: 1280px; margin: 2rem auto; padding: 0 1.2rem; }
+.section-header { text-align: center; margin-bottom: 2rem; }
+.section-header h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin-bottom: 0.5rem; }
+.section-header p { font-size: 0.88rem; color: var(--text-muted); }
+
+.filter-tabs { display: flex; justify-content: flex-start; gap: 0.5rem; margin-top: 1.5rem; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+.filter-tabs::-webkit-scrollbar { display: none; }
+.filter-btn {
+  background: var(--bg-card); border: 1px solid var(--border-glass);
+  color: var(--text-muted); padding: 0.5rem 1.1rem; border-radius: 50px;
+  cursor: pointer; font-weight: 600; transition: var(--transition-smooth);
+  white-space: nowrap; font-size: 0.82rem; flex-shrink: 0;
+}
+
+.filter-btn.active, .filter-btn:hover { background: var(--primary-glow); color: #fff; border-color: var(--primary-glow); }
+
+.plans-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
+
+/* --- Optimized Cards & Fixed App Image Container --- */
+.plan-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-smooth);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.plan-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.4);
+  background: var(--bg-card-hover);
+}
+
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+
+.logo-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: var(--logo-box-bg);
+  border: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.platform-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.discount-tag {
+  background: #10b981; color: #fff; font-size: 0.68rem;
+  font-weight: 800; padding: 4px 8px; border-radius: 20px; text-transform: uppercase;
+}
+
+.platform-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+.platform-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem; }
+
+.price-box { margin-bottom: 1rem; }
+.starting-text { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+.price-row { display: flex; align-items: baseline; gap: 8px; }
+.discount-price { font-size: 1.5rem; font-weight: 800; color: #10b981; }
+.original-price { font-size: 0.92rem; color: var(--text-muted); text-decoration: line-through; }
+
+.faded-app-bg {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  opacity: 0.10;
+  filter: grayscale(20%);
+  pointer-events: none;
+  transition: var(--transition-smooth);
+}
+
+/* --- FULL PAGE AUTHENTICATION SCREEN --- */
+.full-auth-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: var(--bg-main);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  overflow-y: auto;
+}
+
+.auth-art-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: -1;
+  pointer-events: none;
+}
+.glow-auth-1 { width: 400px; height: 400px; background: var(--primary-glow); top: -100px; left: -100px; opacity: 0.4; }
+.glow-auth-2 { width: 350px; height: 350px; background: var(--secondary-glow); bottom: -80px; right: -80px; opacity: 0.4; }
+
+.auth-back-btn {
+  position: absolute;
+  top: 20px; left: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  padding: 0.55rem 1.1rem;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  z-index: 10;
+}
+
+.auth-wrapper {
+  max-width: 950px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.auth-brand-side h2 { font-size: 2rem; font-weight: 800; line-height: 1.2; margin: 1rem 0; }
+.auth-brand-side p { color: var(--text-muted); line-height: 1.5; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+.auth-perks { display: flex; flex-direction: column; gap: 0.8rem; }
+.perk-item { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.88rem; }
+.perk-item i { color: #10b981; font-size: 1.1rem; }
+
+.auth-card-side { padding: 1.8rem; width: 100%; }
+.auth-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-bottom: 1.2rem; }
+.auth-options a { color: var(--primary-glow); text-decoration: none; }
+
+/* --- Trust & FAQ Sections --- */
+.trust-section { max-width: 1280px; margin: 3.5rem auto; padding: 0 1.2rem; }
+.trust-container { padding: 2rem 1.5rem; border-radius: var(--radius-lg); }
+.trust-header { text-align: center; margin-bottom: 2rem; }
+.trust-header h2 { font-size: clamp(1.3rem, 3.5vw, 1.8rem); }
+.trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+.trust-item { text-align: center; }
+.trust-item i { font-size: 2rem; color: var(--primary-glow); margin-bottom: 0.8rem; }
+.trust-item h4 { font-size: 1rem; margin-bottom: 0.4rem; }
+.trust-item p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+.faq-section { max-width: 800px; margin: 3rem auto; padding: 0 1.2rem; }
+.faq-accordion { display: flex; flex-direction: column; gap: 0.8rem; }
+.faq-item { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-md); overflow: hidden; }
+.faq-question { padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: center; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+.faq-answer { padding: 0 1.2rem 1rem; display: none; color: var(--text-muted); font-size: 0.82rem; line-height: 1.5; }
+.faq-item.active .faq-answer { display: block; }
+.faq-item.active .faq-question i { transform: rotate(180deg); }
+
+/* --- Modals & Settings Drawer --- */
+.modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  padding: 1rem;
+}
+.modal.active { opacity: 1; pointer-events: all; }
+
+.glass-card {
+  background: var(--bg-card); border: 1px solid var(--border-glass);
+  width: 100%; max-width: 460px; padding: 1.8rem; border-radius: var(--radius-lg); position: relative;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-lg { max-width: 600px; }
+
+.close-btn { position: absolute; top: 12px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer; padding: 0.2rem; }
+
+.duration-selector { display: flex; background: var(--input-bg); padding: 4px; border-radius: 50px; margin: 1.2rem 0; }
+.duration-btn { flex: 1; padding: 0.55rem; border: none; background: transparent; color: var(--text-muted); font-weight: 600; border-radius: 50px; cursor: pointer; transition: var(--transition-smooth); font-size: 0.8rem; }
+.duration-btn.active { background: var(--primary-glow); color: #fff; }
+
+.sub-plans-container { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.2rem; max-height: 220px; overflow-y: auto; }
+.sub-plan-card { border: 1px solid var(--border-glass); padding: 0.8rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: var(--transition-smooth); font-size: 0.88rem; }
+.sub-plan-card.selected { border-color: var(--primary-glow); background: rgba(99, 102, 241, 0.12); }
+
+.settings-drawer { position: fixed; top: 0; right: -100%; width: 100%; max-width: 320px; height: 100%; background: var(--bg-card); border-left: 1px solid var(--border-glass); z-index: 1500; transition: right 0.4s ease; padding: 1.5rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.settings-drawer.open { right: 0; }
+
+.drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.user-profile-summary { display: flex; align-items: center; gap: 10px; margin: 1rem 0; }
+.avatar { font-size: 1.8rem; color: var(--primary-glow); }
+.user-details h4 { font-size: 0.95rem; }
+.user-details p { font-size: 0.75rem; color: var(--text-muted); }
+
+.divider { border: 0; height: 1px; background: var(--border-glass); margin: 1rem 0; }
+.setting-item { margin-bottom: 1.2rem; }
+.setting-item label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+
+.theme-switch-wrapper { display: flex; gap: 6px; margin-top: 6px; }
+.theme-btn { flex: 1; padding: 0.5rem; border: 1px solid var(--border-glass); background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+.theme-btn.active { background: var(--primary-glow); color: #fff; border-color: var(--primary-glow); }
+
+#languageSelect { width: 100%; padding: 0.6rem; background: var(--input-bg); border: 1px solid var(--border-glass); border-radius: var(--radius-md); color: var(--text-main); outline: none; margin-top: 4px; font-size: 0.85rem; }
+
+.cookie-drawer { position: fixed; bottom: -120px; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid var(--border-glass); padding: 1rem 1.2rem; z-index: 900; transition: bottom 0.5s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.cookie-drawer.active { bottom: 0; }
+.cookie-content { max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.cookie-text { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; flex: 1 1 250px; }
+.cookie-actions { display: flex; gap: 8px; width: 100%; justify-content: flex-end; }
+
+.footer { background: rgba(5, 7, 10, 0.95); border-top: 1px solid var(--border-glass); padding: 3rem 1.2rem 1.5rem; margin-top: 4rem; }
+.footer-container { max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
+.footer-brand { flex: 1 1 250px; }
+.footer-brand p { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.6rem; }
+.footer-links h4, .footer-socials h4 { font-size: 0.9rem; margin-bottom: 0.6rem; }
+.footer-links a { display: block; color: var(--text-muted); text-decoration: none; font-size: 0.82rem; margin-bottom: 0.4rem; }
+.social-icons { display: flex; gap: 0.8rem; font-size: 1.3rem; margin-top: 0.6rem; }
+.social-icons a { color: var(--text-muted); }
+.footer-bottom { text-align: center; color: var(--text-muted); border-top: 1px solid var(--border-glass); margin-top: 2rem; padding-top: 1.2rem; font-size: 0.78rem; }
+
+.input-group { position: relative; margin-bottom: 1rem; }
+.input-group i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem; }
+.input-group input { width: 100%; padding: 0.75rem 0.9rem 0.75rem 38px; background: var(--input-bg); border: 1px solid var(--border-glass); border-radius: var(--radius-md); color: var(--text-main); outline: none; font-size: 0.88rem; }
+
+.auth-tabs { display: flex; border-bottom: 1px solid var(--border-glass); margin-bottom: 1.2rem; }
+.auth-tab { flex: 1; padding: 0.7rem; background: none; border: none; color: var(--text-muted); font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.88rem; }
+.auth-tab.active { color: var(--primary-glow); border-bottom-color: var(--primary-glow); }
+
+.loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display:flex; flex-direction:column; justify-content:center; align-items:center; gap:1rem; border-radius: var(--radius-lg); font-size: 0.88rem; }
+.spinner { width:36px; height:36px; border:3px solid rgba(255,255,255,0.1); border-top-color:var(--primary-glow); border-radius:50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+
+/* --- MEDIA QUERIES FOR MOBILE & TABLET --- */
+@media (max-width: 850px) {
+  .mobile-hamburger { display: block; }
   
-  document.getElementById('modalAppHeader').innerHTML = `
-    <div style="display:flex; align-items:center; gap:15px; margin-bottom: 1rem;">
-      <div class="logo-box" style="width:50px; height:50px;">
-        <img src="${selectedApp.logo}" style="width:100%; height:100%; object-fit:contain;" />
-      </div>
-      <div>
-        <h3 style="font-size:1.3rem;">${selectedApp.name}</h3>
-        <p style="font-size:0.82rem; color:var(--text-muted);">${selectedApp.description}</p>
-      </div>
-    </div>
-  `;
-
-  updateDurationUI();
-  openModal('planDetailModal');
-}
-
-function selectDuration(type) {
-  currentDuration = type;
-  document.getElementById('btnMonthly').classList.toggle('active', type === 'monthly');
-  document.getElementById('btnYearly').classList.toggle('active', type === 'yearly');
-  updateDurationUI();
-}
-
-function updateDurationUI() {
-  const container = document.getElementById('subPlansContainer');
-  container.innerHTML = '';
-
-  const plans = selectedApp.plans[currentDuration] || [];
-
-  if (plans.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted); padding: 1rem;">No yearly plans available for this service. Please select Monthly.</p>`;
-    return;
+  .nav-links {
+    position: fixed;
+    top: 60px; left: -100%;
+    width: 100%; height: calc(100vh - 60px);
+    background: var(--bg-card);
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
+    transition: left 0.35s ease;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 99;
   }
 
-  plans.forEach((tier, index) => {
-    const discounted = calcDiscount(tier.original);
-    const isSelected = index === 0;
-    if(isSelected) selectedTier = { ...tier, discounted };
-
-    const tierEl = document.createElement('div');
-    tierEl.className = `sub-plan-card ${isSelected ? 'selected' : ''}`;
-    tierEl.onclick = function() {
-      document.querySelectorAll('.sub-plan-card').forEach(c => c.classList.remove('selected'));
-      tierEl.classList.add('selected');
-      selectedTier = { ...tier, discounted };
-    };
-
-    tierEl.innerHTML = `
-      <div>
-        <strong>${tier.name}</strong>
-        <p style="font-size:0.78rem; color:var(--text-muted);">${tier.features}</p>
-      </div>
-      <div style="text-align:right">
-        <span style="font-weight:800; color:#10b981; font-size:1.2rem;">₹${discounted}</span>
-        <p style="font-size:0.75rem; text-decoration:line-through; color:var(--text-muted)">₹${tier.original}</p>
-      </div>
-    `;
-    container.appendChild(tierEl);
-  });
-}
-
-// Razorpay Checkout Execution
-function startRazorpayPayment() {
-  const contact = document.getElementById('targetContact').value;
-  if (!contact) {
-    alert("Please enter a valid target Phone Number or Email ID for activation.");
-    return;
-  }
-
-  document.getElementById('paymentLoading').classList.remove('hidden');
-
-  const options = {
-    key: RAZORPAY_KEY,
-    amount: selectedTier.discounted * 100,
-    currency: "INR",
-    name: "LUROVA OTT",
-    description: `${selectedApp.name} - ${selectedTier.name}`,
-    image: selectedApp.logo,
-    handler: function (response) {
-      document.getElementById('paymentLoading').classList.add('hidden');
-      closeModal('planDetailModal');
-      alert(`🎉 SUCCESS! Payment ID: ${response.razorpay_payment_id}\n\nYour ${selectedApp.name} subscription is being activated on ${contact}. Expected activation time: ~15 mins.`);
-    },
-    prefill: {
-      email: contact.includes('@') ? contact : "customer@lurovaott.com",
-      contact: !contact.includes('@') ? contact : "9876543210"
-    },
-    theme: { color: "#6366f1" },
-    modal: {
-      ondismiss: function() {
-        document.getElementById('paymentLoading').classList.add('hidden');
-      }
-    }
-  };
-
-  const rzp = new Razorpay(options);
-  rzp.open();
-}
-
-// Toggle Full-Page Authentication Screen
-function toggleAuthPage(show) {
-  const fullAuth = document.getElementById('fullAuthPage');
-  if(show) {
-    fullAuth.classList.remove('hidden');
-  } else {
-    fullAuth.classList.add('hidden');
-  }
-}
-
-function switchAuthTab(type) {
-  document.getElementById('loginForm').classList.toggle('hidden', type !== 'login');
-  document.getElementById('signupForm').classList.toggle('hidden', type !== 'signup');
-  document.getElementById('loginTabBtn').classList.toggle('active', type === 'login');
-  document.getElementById('signupTabBtn').classList.toggle('active', type === 'signup');
-}
-
-function handleAuth(e, type) {
-  e.preventDefault();
-  const name = type === 'login' ? document.getElementById('loginEmail').value.split('@')[0] : document.getElementById('signupName').value;
-  const email = type === 'login' ? document.getElementById('loginEmail').value : document.getElementById('signupEmail').value;
+  .nav-links.active { left: 0; }
+  .nav-links a { font-size: 1.1rem; }
   
-  currentUser = { name, email };
-  document.getElementById('profileName').innerText = name;
-  document.getElementById('profileEmail').innerText = email;
-  document.getElementById('authBtn').innerHTML = `<i class="fa-solid fa-user-check"></i> ${name}`;
-  
-  toggleAuthPage(false);
+  .nav-actions .btn-outline span { display: none; }
+  .nav-actions .btn-outline { padding: 0.6rem; min-width: 42px; }
+
+  .search-container input { padding: 0.85rem 95px 0.85rem 40px; font-size: 0.85rem; }
+  .search-btn { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+
+  .auth-wrapper { grid-template-columns: 1fr; margin-top: 1rem; }
+  .auth-brand-side { display: none; }
+  .auth-back-btn span { display: none; }
+  .auth-back-btn { padding: 0.5rem; border-radius: 50%; }
+
+  .cookie-content { flex-direction: column; align-items: flex-start; }
+  .cookie-actions { width: 100%; justify-content: flex-end; }
 }
 
-// Theme Controls
-function setTheme(mode) {
-  if (mode === 'light') {
-    document.body.classList.remove('dark-theme');
-    document.body.classList.add('light-theme');
-    document.getElementById('lightThemeBtn').classList.add('active');
-    document.getElementById('darkThemeBtn').classList.remove('active');
-  } else {
-    document.body.classList.remove('light-theme');
-    document.body.classList.add('dark-theme');
-    document.getElementById('darkThemeBtn').classList.add('active');
-    document.getElementById('lightThemeBtn').classList.remove('active');
-  }
+@media (max-width: 480px) {
+  .plans-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 0.6rem; }
+  .stat-card { padding: 0.8rem 1rem; }
+  .glass-card { padding: 1.4rem 1.1rem; }
 }
-
-// Regional Language Translation
-function changeLanguage(langCode) {
-  const dict = translations[langCode] || translations['en'];
-  document.querySelectorAll('[data-lang]').forEach(el => {
-    const key = el.getAttribute('data-lang');
-    if (dict[key]) el.innerText = dict[key];
-  });
-}
-
-// FAQ Accordion
-function toggleFaq(el) {
-  const item = el.parentElement;
-  item.classList.toggle('active');
-}
-
-// Modal Utilities
-function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function toggleSettingsDrawer() { document.getElementById('settingsDrawer').classList.toggle('open'); }
-function adjustGlow(val) { document.querySelectorAll('.ambient-glow').forEach(el => el.style.opacity = val / 10); }
-function respondCookie(acc) { document.getElementById('cookieDrawer').classList.remove('active'); }
-
-// Init
-window.addEventListener('DOMContentLoaded', () => {
-  renderCatalog('all');
-  setTimeout(() => document.getElementById('cookieDrawer').classList.add('active'), 2000);
-});
