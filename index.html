@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>LUROVA OTT | Premium Subscriptions at Flat 30% Off</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -26,13 +26,17 @@
           <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
         </div>
 
-        <ul class="nav-links">
-          <li><a href="#home" class="active" data-lang="nav_home">Home</a></li>
-          <li><a href="#plans" data-lang="nav_plans">Subscriptions</a></li>
-          <li><a href="#trust" data-lang="nav_trust">Why Us</a></li>
-          <li><a href="#faq" data-lang="nav_faq">FAQ</a></li>
-          <li><a href="#" onclick="openModal('termsModal')" data-lang="nav_terms">Terms</a></li>
-          <li><a href="#" onclick="openModal('privacyModal')" data-lang="nav_privacy">Privacy</a></li>
+        <button class="mobile-hamburger" id="hamburgerBtn" onclick="toggleMobileMenu()">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#home" class="active" onclick="closeMobileMenu()" data-lang="nav_home">Home</a></li>
+          <li><a href="#plans" onclick="closeMobileMenu()" data-lang="nav_plans">Subscriptions</a></li>
+          <li><a href="#trust" onclick="closeMobileMenu()" data-lang="nav_trust">Why Us</a></li>
+          <li><a href="#faq" onclick="closeMobileMenu()" data-lang="nav_faq">FAQ</a></li>
+          <li><a href="#" onclick="openModal('termsModal'); closeMobileMenu();" data-lang="nav_terms">Terms</a></li>
+          <li><a href="#" onclick="openModal('privacyModal'); closeMobileMenu();" data-lang="nav_privacy">Privacy</a></li>
         </ul>
 
         <div class="nav-actions">
@@ -50,7 +54,7 @@
       <div class="hero-content">
         <div class="badge">
           <i class="fa-solid fa-shield-halved"></i> 
-          <span data-lang="hero_badge">Verified Official Accounts • Instant 15-Min Activation</span>
+          <span data-lang="hero_badge">Verified Accounts • 15-Min Activation</span>
         </div>
         <h1 class="hero-title">
           <span data-lang="hero_h1_1">Unlock Premium Apps</span> <br/>
@@ -62,7 +66,7 @@
 
         <div class="search-container">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search Netflix, Spotify, Adobe, Swiggy, Apple, YouTube..." />
+          <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search Netflix, Spotify, Adobe, Swiggy..." />
           <button class="btn btn-primary search-btn"><span data-lang="search_btn">Search</span></button>
         </div>
 
@@ -93,7 +97,7 @@
           <button class="filter-btn" onclick="filterPlans('ott')" data-lang="cat_ott">OTT Movies & TV</button>
           <button class="filter-btn" onclick="filterPlans('music')" data-lang="cat_music">Music & Audio</button>
           <button class="filter-btn" onclick="filterPlans('utility')" data-lang="cat_utility">Tools & Cloud</button>
-          <button class="filter-btn" onclick="filterPlans('delivery')" data-lang="cat_delivery">Food & Quick Commerce</button>
+          <button class="filter-btn" onclick="filterPlans('delivery')" data-lang="cat_delivery">Food & Delivery</button>
         </div>
       </div>
 
@@ -197,7 +201,7 @@
     <div class="auth-art-glow glow-auth-2"></div>
     
     <button class="auth-back-btn" onclick="toggleAuthPage(false)">
-      <i class="fa-solid fa-arrow-left"></i> Back to Website
+      <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
     </button>
 
     <div class="auth-wrapper">
@@ -207,7 +211,7 @@
           <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
         </div>
         <h2>Access Your Premium <br/><span class="gradient-text">Subscription Portal</span></h2>
-        <p>Log in or create a new account to manage your active digital subscriptions, view top-up histories, and enjoy 30% off across 20+ apps.</p>
+        <p>Log in or create a new account to manage active digital subscriptions, view top-up histories, and enjoy 30% off across 20+ apps.</p>
         
         <div class="auth-perks">
           <div class="perk-item"><i class="fa-solid fa-bolt"></i> Instant 15-Minute Activation</div>
@@ -312,14 +316,14 @@
 
       <div class="duration-selector">
         <button class="duration-btn active" id="btnMonthly" onclick="selectDuration('monthly')">Monthly Plan</button>
-        <button class="duration-btn" id="btnYearly" onclick="selectDuration('yearly')">Yearly Plan (Extra Savings)</button>
+        <button class="duration-btn" id="btnYearly" onclick="selectDuration('yearly')">Yearly Plan</button>
       </div>
 
       <div class="sub-plans-container" id="subPlansContainer">
         </div>
 
       <div class="activation-form">
-        <label><strong>Enter Target Email or Phone for Top-up Activation:</strong></label>
+        <label><strong>Enter Target Email or Phone:</strong></label>
         <div class="input-group">
           <i class="fa-solid fa-mobile-retro"></i>
           <input type="text" id="targetContact" placeholder="e.g. 9876543210 or target@gmail.com" required />
@@ -370,8 +374,10 @@
 
   <div class="cookie-drawer" id="cookieDrawer">
     <div class="cookie-content">
-      <i class="fa-solid fa-cookie-bite cookie-icon"></i>
-      <p>LUROVA OTT uses cookies to save preferences and enhance authentication speed. Read our <a href="#" onclick="openModal('privacyModal')">Privacy Policy</a>.</p>
+      <div class="cookie-text">
+        <i class="fa-solid fa-cookie-bite cookie-icon"></i>
+        <p>LUROVA OTT uses cookies to save preferences. Read our <a href="#" onclick="openModal('privacyModal')">Privacy Policy</a>.</p>
+      </div>
       <div class="cookie-actions">
         <button class="btn btn-sm btn-outline" onclick="respondCookie(false)">Reject</button>
         <button class="btn btn-sm btn-primary" onclick="respondCookie(true)">Accept All</button>
