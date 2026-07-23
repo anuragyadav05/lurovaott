@@ -22,11 +22,11 @@
     <nav class="navbar">
       <div class="nav-container">
         <div class="logo">
-          <i class="fa-solid fa-play-circle logo-icon"></i>
+          <i class="fa-solid fa-circle-play logo-icon"></i>
           <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
         </div>
 
-        <button class="mobile-hamburger" id="hamburgerBtn" onclick="toggleMobileMenu()">
+        <button class="mobile-hamburger" id="hamburgerBtn" onclick="toggleMobileMenu()" aria-label="Toggle Navigation">
           <i class="fa-solid fa-bars"></i>
         </button>
 
@@ -43,7 +43,7 @@
           <button class="btn btn-outline" id="authBtn" onclick="toggleAuthPage(true)">
             <i class="fa-regular fa-user"></i> <span data-lang="auth_btn">Login / Sign Up</span>
           </button>
-          <button class="btn btn-icon" id="settingsBtn" onclick="toggleSettingsDrawer()">
+          <button class="btn btn-icon" id="settingsBtn" onclick="toggleSettingsDrawer()" aria-label="Open Settings">
             <i class="fa-solid fa-sliders"></i>
           </button>
         </div>
@@ -93,11 +93,11 @@
         <p data-lang="catalog_sub">Click any service to toggle between Monthly or Annual billing tiers.</p>
         
         <div class="filter-tabs">
-          <button class="filter-btn active" onclick="filterPlans('all')" data-lang="cat_all">All Apps</button>
-          <button class="filter-btn" onclick="filterPlans('ott')" data-lang="cat_ott">OTT Movies & TV</button>
-          <button class="filter-btn" onclick="filterPlans('music')" data-lang="cat_music">Music & Audio</button>
-          <button class="filter-btn" onclick="filterPlans('utility')" data-lang="cat_utility">Tools & Cloud</button>
-          <button class="filter-btn" onclick="filterPlans('delivery')" data-lang="cat_delivery">Food & Delivery</button>
+          <button class="filter-btn active" onclick="filterPlans('all', event)" data-lang="cat_all">All Apps</button>
+          <button class="filter-btn" onclick="filterPlans('ott', event)" data-lang="cat_ott">OTT Movies & TV</button>
+          <button class="filter-btn" onclick="filterPlans('music', event)" data-lang="cat_music">Music & Audio</button>
+          <button class="filter-btn" onclick="filterPlans('utility', event)" data-lang="cat_utility">Tools & Cloud</button>
+          <button class="filter-btn" onclick="filterPlans('delivery', event)" data-lang="cat_delivery">Food & Delivery</button>
         </div>
       </div>
 
@@ -108,21 +108,21 @@
     <section class="trust-section" id="trust">
       <div class="trust-container glass-card">
         <div class="trust-header">
-          <h2><i class="fa-solid fa-shield-check"></i> <span data-lang="trust_title">Why Customers Trust LUROVA OTT</span></h2>
+          <h2><i class="fa-solid fa-circle-check"></i> <span data-lang="trust_title">Why Customers Trust LUROVA OTT</span></h2>
         </div>
         <div class="trust-grid">
           <div class="trust-item">
-            <i class="fa-solid fa-certificate"></i>
+            <i class="fa-solid fa-award"></i>
             <h4>Corporate Bulk Licensing</h4>
             <p>We leverage enterprise multi-user allocations to source official platform licenses, transferring 30% savings directly to you.</p>
           </div>
           <div class="trust-item">
-            <i class="fa-solid fa-mobile-retro"></i>
+            <i class="fa-solid fa-mobile-screen-button"></i>
             <h4>Direct Top-Up Activation</h4>
             <p>No credentials or passwords needed. Subscriptions apply directly to your phone number or email ID.</p>
           </div>
           <div class="trust-item">
-            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <i class="fa-solid fa-rotate-left"></i>
             <h4>Automated Refund Guarantee</h4>
             <p>If activation is not completed within 2 hours, our automated system triggers a 100% full refund to your original payment method.</p>
           </div>
@@ -169,7 +169,7 @@
       <div class="footer-container">
         <div class="footer-brand">
           <div class="logo">
-            <i class="fa-solid fa-play-circle logo-icon"></i>
+            <i class="fa-solid fa-circle-play logo-icon"></i>
             <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
           </div>
           <p>India's trusted marketplace for genuine digital subscriptions at flat 30% discounts.</p>
@@ -207,7 +207,7 @@
     <div class="auth-wrapper">
       <div class="auth-brand-side">
         <div class="logo">
-          <i class="fa-solid fa-play-circle logo-icon"></i>
+          <i class="fa-solid fa-circle-play logo-icon"></i>
           <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
         </div>
         <h2>Access Your Premium <br/><span class="gradient-text">Subscription Portal</span></h2>
@@ -215,7 +215,7 @@
         
         <div class="auth-perks">
           <div class="perk-item"><i class="fa-solid fa-bolt"></i> Instant 15-Minute Activation</div>
-          <div class="perk-item"><i class="fa-solid fa-shield-check"></i> Safe & Passwordless Credentials</div>
+          <div class="perk-item"><i class="fa-solid fa-circle-check"></i> Safe & Passwordless Credentials</div>
           <div class="perk-item"><i class="fa-solid fa-tag"></i> Flat 30% Discount Guaranteed</div>
         </div>
       </div>
@@ -272,7 +272,7 @@
     </div>
     <div class="drawer-body">
       <div class="user-profile-summary">
-        <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+        <div class="avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
           <h4 id="profileName">Guest Visitor</h4>
           <p id="profileEmail">Login to view profile settings</p>
@@ -281,7 +281,7 @@
       <hr class="divider"/>
       
       <div class="setting-item">
-        <label><i class="fa-solid fa-sun-moon"></i> <span data-lang="setting_theme">Appearance Mode</span></label>
+        <label><i class="fa-solid fa-moon"></i> <span data-lang="setting_theme">Appearance Mode</span></label>
         <div class="theme-switch-wrapper">
           <button class="theme-btn active" id="darkThemeBtn" onclick="setTheme('dark')">Dark Mode</button>
           <button class="theme-btn" id="lightThemeBtn" onclick="setTheme('light')">Light Mode</button>
@@ -301,7 +301,7 @@
       </div>
 
       <div class="setting-item">
-        <label><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-lang="setting_glow">Ambient Glow Level</span></label>
+        <label><i class="fa-solid fa-wand-magic"></i> <span data-lang="setting_glow">Ambient Glow Level</span></label>
         <input type="range" min="0" max="10" value="6" id="glowSlider" oninput="adjustGlow(this.value)"/>
       </div>
     </div>
@@ -325,7 +325,7 @@
       <div class="activation-form">
         <label><strong>Enter Target Email or Phone:</strong></label>
         <div class="input-group">
-          <i class="fa-solid fa-mobile-retro"></i>
+          <i class="fa-solid fa-mobile-screen-button"></i>
           <input type="text" id="targetContact" placeholder="e.g. 9876543210 or target@gmail.com" required />
         </div>
         <button class="btn btn-primary full-width animated-pay-btn" onclick="startRazorpayPayment()">
