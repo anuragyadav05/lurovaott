@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LUROVA OTT | Premium Subscriptions at Flat 30% Off</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="style.css" />
+  
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body class="dark-theme">
+
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <div id="mainWebsite">
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="logo">
+          <i class="fa-solid fa-play-circle logo-icon"></i>
+          <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
+        </div>
+
+        <ul class="nav-links">
+          <li><a href="#home" class="active" data-lang="nav_home">Home</a></li>
+          <li><a href="#plans" data-lang="nav_plans">Subscriptions</a></li>
+          <li><a href="#trust" data-lang="nav_trust">Why Us</a></li>
+          <li><a href="#faq" data-lang="nav_faq">FAQ</a></li>
+          <li><a href="#" onclick="openModal('termsModal')" data-lang="nav_terms">Terms</a></li>
+          <li><a href="#" onclick="openModal('privacyModal')" data-lang="nav_privacy">Privacy</a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <button class="btn btn-outline" id="authBtn" onclick="toggleAuthPage(true)">
+            <i class="fa-regular fa-user"></i> <span data-lang="auth_btn">Login / Sign Up</span>
+          </button>
+          <button class="btn btn-icon" id="settingsBtn" onclick="toggleSettingsDrawer()">
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <header class="hero" id="home">
+      <div class="hero-content">
+        <div class="badge">
+          <i class="fa-solid fa-shield-halved"></i> 
+          <span data-lang="hero_badge">Verified Official Accounts • Instant 15-Min Activation</span>
+        </div>
+        <h1 class="hero-title">
+          <span data-lang="hero_h1_1">Unlock Premium Apps</span> <br/>
+          <span class="gradient-text" data-lang="hero_h1_2">At Guaranteed 30% Off</span>
+        </h1>
+        <p class="hero-subtitle" data-lang="hero_sub">
+          Direct subscription top-ups credited to your personal Mobile Number or Email. Enjoy official 4K OTT streaming, lossless audio, productivity suites, and quick delivery passes at standard discounted rates.
+        </p>
+
+        <div class="search-container">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search Netflix, Spotify, Adobe, Swiggy, Apple, YouTube..." />
+          <button class="btn btn-primary search-btn"><span data-lang="search_btn">Search</span></button>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card">
+            <h3>99.2%</h3>
+            <p data-lang="stat_1">Customer Satisfaction</p>
+          </div>
+          <div class="stat-card">
+            <h3>50,000+</h3>
+            <p data-lang="stat_2">Active Subscribers</p>
+          </div>
+          <div class="stat-card">
+            <h3>24/7</h3>
+            <p data-lang="stat_3">Instant Support</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="catalog-section" id="plans">
+      <div class="section-header">
+        <h2><span data-lang="catalog_title">Explore Available</span> <span class="gradient-text">Platforms</span></h2>
+        <p data-lang="catalog_sub">Click any service to toggle between Monthly or Annual billing tiers.</p>
+        
+        <div class="filter-tabs">
+          <button class="filter-btn active" onclick="filterPlans('all')" data-lang="cat_all">All Apps</button>
+          <button class="filter-btn" onclick="filterPlans('ott')" data-lang="cat_ott">OTT Movies & TV</button>
+          <button class="filter-btn" onclick="filterPlans('music')" data-lang="cat_music">Music & Audio</button>
+          <button class="filter-btn" onclick="filterPlans('utility')" data-lang="cat_utility">Tools & Cloud</button>
+          <button class="filter-btn" onclick="filterPlans('delivery')" data-lang="cat_delivery">Food & Quick Commerce</button>
+        </div>
+      </div>
+
+      <div class="plans-grid" id="plansGrid">
+        </div>
+    </section>
+
+    <section class="trust-section" id="trust">
+      <div class="trust-container glass-card">
+        <div class="trust-header">
+          <h2><i class="fa-solid fa-shield-check"></i> <span data-lang="trust_title">Why Customers Trust LUROVA OTT</span></h2>
+        </div>
+        <div class="trust-grid">
+          <div class="trust-item">
+            <i class="fa-solid fa-certificate"></i>
+            <h4>Corporate Bulk Licensing</h4>
+            <p>We leverage enterprise multi-user allocations to source official platform licenses, transferring 30% savings directly to you.</p>
+          </div>
+          <div class="trust-item">
+            <i class="fa-solid fa-mobile-retro"></i>
+            <h4>Direct Top-Up Activation</h4>
+            <p>No credentials or passwords needed. Subscriptions apply directly to your phone number or email ID.</p>
+          </div>
+          <div class="trust-item">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <h4>Automated Refund Guarantee</h4>
+            <p>If activation is not completed within 2 hours, our automated system triggers a 100% full refund to your original payment method.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq">
+      <div class="section-header">
+        <h2><span data-lang="faq_title">Frequently Asked</span> <span class="gradient-text">Questions</span></h2>
+      </div>
+      <div class="faq-accordion">
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Do I need to share my account password?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+          <div class="faq-answer">
+            <p>Never. LUROVA OTT uses direct top-up numbers and official invite codes to credit your subscriptions safely.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>How long does activation take after Razorpay payment?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+          <div class="faq-answer">
+            <p>Most orders complete automatically in under 15 minutes. During high demand, it may take up to 60 minutes.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Are these monthly and yearly discounts permanent?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+          <div class="faq-answer">
+            <p>Yes! As long as you renew your subscription through LUROVA OTT, you retain a 30% discount permanently.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <div class="logo">
+            <i class="fa-solid fa-play-circle logo-icon"></i>
+            <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
+          </div>
+          <p>India's trusted marketplace for genuine digital subscriptions at flat 30% discounts.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Navigation</h4>
+          <a href="#plans">Browse Subscriptions</a>
+          <a href="#trust">Why Choose Us</a>
+          <a href="#" onclick="openModal('termsModal')">Terms & Conditions</a>
+          <a href="#" onclick="openModal('privacyModal')">Privacy Policy</a>
+        </div>
+        <div class="footer-socials">
+          <h4>Customer Care</h4>
+          <div class="social-icons">
+            <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+            <a href="#"><i class="fa-brands fa-telegram"></i></a>
+            <a href="#"><i class="fa-regular fa-envelope"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 LUROVA OTT. All Rights Reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <div id="fullAuthPage" class="full-auth-screen hidden">
+    <div class="auth-art-glow glow-auth-1"></div>
+    <div class="auth-art-glow glow-auth-2"></div>
+    
+    <button class="auth-back-btn" onclick="toggleAuthPage(false)">
+      <i class="fa-solid fa-arrow-left"></i> Back to Website
+    </button>
+
+    <div class="auth-wrapper">
+      <div class="auth-brand-side">
+        <div class="logo">
+          <i class="fa-solid fa-play-circle logo-icon"></i>
+          <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
+        </div>
+        <h2>Access Your Premium <br/><span class="gradient-text">Subscription Portal</span></h2>
+        <p>Log in or create a new account to manage your active digital subscriptions, view top-up histories, and enjoy 30% off across 20+ apps.</p>
+        
+        <div class="auth-perks">
+          <div class="perk-item"><i class="fa-solid fa-bolt"></i> Instant 15-Minute Activation</div>
+          <div class="perk-item"><i class="fa-solid fa-shield-check"></i> Safe & Passwordless Credentials</div>
+          <div class="perk-item"><i class="fa-solid fa-tag"></i> Flat 30% Discount Guaranteed</div>
+        </div>
+      </div>
+
+      <div class="auth-card-side glass-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="loginTabBtn" onclick="switchAuthTab('login')">Login</button>
+          <button class="auth-tab" id="signupTabBtn" onclick="switchAuthTab('signup')">Create Account</button>
+        </div>
+
+        <form id="loginForm" class="auth-form" onsubmit="handleAuth(event, 'login')">
+          <div class="input-group">
+            <i class="fa-regular fa-envelope"></i>
+            <input type="email" id="loginEmail" placeholder="Email Address or Phone Number" required />
+          </div>
+          <div class="input-group">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" placeholder="Password" required />
+          </div>
+          <div class="auth-options">
+            <label><input type="checkbox" checked /> Remember Me</label>
+            <a href="#">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Sign In to Dashboard</button>
+        </form>
+
+        <form id="signupForm" class="auth-form hidden" onsubmit="handleAuth(event, 'signup')">
+          <div class="input-group">
+            <i class="fa-regular fa-user"></i>
+            <input type="text" id="signupName" placeholder="Full Name" required />
+          </div>
+          <div class="input-group">
+            <i class="fa-regular fa-envelope"></i>
+            <input type="email" id="signupEmail" placeholder="Email Address" required />
+          </div>
+          <div class="input-group">
+            <i class="fa-solid fa-mobile-screen"></i>
+            <input type="tel" id="signupPhone" placeholder="Mobile Number" required />
+          </div>
+          <div class="input-group">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" placeholder="Create Password" required />
+          </div>
+          <button type="submit" class="btn btn-primary full-width">Create Free Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-drawer" id="settingsDrawer">
+    <div class="drawer-header">
+      <h3><i class="fa-solid fa-sliders"></i> <span data-lang="settings_title">Web Settings</span></h3>
+      <button class="close-btn" onclick="toggleSettingsDrawer()">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="user-profile-summary">
+        <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+        <div class="user-details">
+          <h4 id="profileName">Guest Visitor</h4>
+          <p id="profileEmail">Login to view profile settings</p>
+        </div>
+      </div>
+      <hr class="divider"/>
+      
+      <div class="setting-item">
+        <label><i class="fa-solid fa-sun-moon"></i> <span data-lang="setting_theme">Appearance Mode</span></label>
+        <div class="theme-switch-wrapper">
+          <button class="theme-btn active" id="darkThemeBtn" onclick="setTheme('dark')">Dark Mode</button>
+          <button class="theme-btn" id="lightThemeBtn" onclick="setTheme('light')">Light Mode</button>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label><i class="fa-solid fa-language"></i> <span data-lang="setting_lang">Regional Language</span></label>
+        <select id="languageSelect" onchange="changeLanguage(this.value)">
+          <option value="en">English (Default)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="bn">বাংলা (Bengali)</option>
+          <option value="ta">தமிழ் (Tamil)</option>
+          <option value="te">తెలుగు (Telugu)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-lang="setting_glow">Ambient Glow Level</span></label>
+        <input type="range" min="0" max="10" value="6" id="glowSlider" oninput="adjustGlow(this.value)"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="planDetailModal">
+    <div class="modal-content glass-card modal-lg">
+      <button class="close-btn" onclick="closeModal('planDetailModal')">&times;</button>
+      
+      <div class="modal-header-app" id="modalAppHeader">
+        </div>
+
+      <div class="duration-selector">
+        <button class="duration-btn active" id="btnMonthly" onclick="selectDuration('monthly')">Monthly Plan</button>
+        <button class="duration-btn" id="btnYearly" onclick="selectDuration('yearly')">Yearly Plan (Extra Savings)</button>
+      </div>
+
+      <div class="sub-plans-container" id="subPlansContainer">
+        </div>
+
+      <div class="activation-form">
+        <label><strong>Enter Target Email or Phone for Top-up Activation:</strong></label>
+        <div class="input-group">
+          <i class="fa-solid fa-mobile-retro"></i>
+          <input type="text" id="targetContact" placeholder="e.g. 9876543210 or target@gmail.com" required />
+        </div>
+        <button class="btn btn-primary full-width animated-pay-btn" onclick="startRazorpayPayment()">
+          <span>Proceed to Checkout (Razorpay)</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="loading-overlay hidden" id="paymentLoading">
+        <div class="spinner"></div>
+        <p>Securing Connection with Razorpay...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="termsModal">
+    <div class="modal-content glass-card info-modal">
+      <button class="close-btn" onclick="closeModal('termsModal')">&times;</button>
+      <h3>Terms & Conditions</h3>
+      <div class="info-body">
+        <p>LUROVA OTT commercial policies:</p>
+        <ul>
+          <li>All subscription activations are fulfilled through enterprise and corporate partner allocations.</li>
+          <li>Processing turnaround time ranges from 15 to 60 minutes upon payment receipt.</li>
+          <li>Ensure target activation details are submitted correctly to prevent delays.</li>
+          <li>Full automated refunds are initiated if activation fails within 2 hours.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="privacyModal">
+    <div class="modal-content glass-card info-modal">
+      <button class="close-btn" onclick="closeModal('privacyModal')">&times;</button>
+      <h3>Privacy Policy</h3>
+      <div class="info-body">
+        <p>How we handle data:</p>
+        <ul>
+          <li>We store minimal phone and email contact credentials strictly required for subscription delivery.</li>
+          <li>We never request login passwords for third-party OTT or music accounts.</li>
+          <li>Payments are processed using Razorpay PCI-DSS certified checkout infrastructure.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="cookie-drawer" id="cookieDrawer">
+    <div class="cookie-content">
+      <i class="fa-solid fa-cookie-bite cookie-icon"></i>
+      <p>LUROVA OTT uses cookies to save preferences and enhance authentication speed. Read our <a href="#" onclick="openModal('privacyModal')">Privacy Policy</a>.</p>
+      <div class="cookie-actions">
+        <button class="btn btn-sm btn-outline" onclick="respondCookie(false)">Reject</button>
+        <button class="btn btn-sm btn-primary" onclick="respondCookie(true)">Accept All</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
