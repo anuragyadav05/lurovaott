@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="style.css" />
   
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 </head>
 <body class="dark-theme">
 
@@ -229,11 +232,11 @@
         <form id="loginForm" class="auth-form" onsubmit="handleAuth(event, 'login')">
           <div class="input-group">
             <i class="fa-regular fa-envelope"></i>
-            <input type="email" id="loginEmail" placeholder="Email Address or Phone Number" required />
+            <input type="email" id="loginEmail" placeholder="Email Address" required />
           </div>
           <div class="input-group">
             <i class="fa-solid fa-lock"></i>
-            <input type="password" placeholder="Password" required />
+            <input type="password" id="loginPassword" placeholder="Password" required />
           </div>
           <div class="auth-options">
             <label><input type="checkbox" checked /> Remember Me</label>
@@ -257,7 +260,7 @@
           </div>
           <div class="input-group">
             <i class="fa-solid fa-lock"></i>
-            <input type="password" placeholder="Create Password" required />
+            <input type="password" id="signupPassword" placeholder="Create Password" required />
           </div>
           <button type="submit" class="btn btn-primary full-width">Create Free Account</button>
         </form>
@@ -278,6 +281,13 @@
           <p id="profileEmail">Login to view profile settings</p>
         </div>
       </div>
+
+      <div id="logoutContainer" class="hidden" style="margin-bottom: 1rem;">
+        <button class="btn btn-outline full-width" onclick="logoutUser()">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+
       <hr class="divider"/>
       
       <div class="setting-item">
