@@ -1,13 +1,54 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH MOBILE TOUCH & RESPONSIVE HANDLING
+   LUROVA OTT - CORE SCRIPT WITH FIREBASE AUTH & MOBILE HANDLING
    ========================================================================== */
 
 const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
+
+// Firebase Configuration [cite: 40]
+const firebaseConfig = {
+  apiKey: "AIzaSyCZvJC6xQkhuM7MkybSwn7FqW5W-ByTKFk",
+  authDomain: "lurova-account.firebaseapp.com",
+  projectId: "lurova-account",
+  storageBucket: "lurova-account.firebasestorage.app",
+  messagingSenderId: "925302881748",
+  appId: "1:925302881748:web:da8f9f6b298e27b758ea41"
+};
+
+// Initialize Firebase App & Auth [cite: 43]
+if (typeof firebase !== 'undefined') {
+  firebase.initializeApp(firebaseConfig);
+}
+const auth = typeof firebase !== 'undefined' ? firebase.auth() : null;
 
 let selectedApp = null;
 let currentDuration = 'monthly';
 let selectedTier = null;
 let currentUser = null;
+
+// Persistent Authentication State Sync [cite: 44, 46]
+if (auth) {
+  auth.onAuthStateChanged((user) => {
+    const logoutBtnContainer = document.getElementById('logoutContainer');
+    if (user) {
+      currentUser = {
+        name: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        uid: user.uid
+      };
+      
+      document.getElementById('profileName').innerText = currentUser.name;
+      document.getElementById('profileEmail').innerText = currentUser.email;
+      document.getElementById('authBtn').innerHTML = `<i class="fa-solid fa-user-check"></i> <span>${currentUser.name}</span>`;
+      if (logoutBtnContainer) logoutBtnContainer.classList.remove('hidden');
+    } else {
+      currentUser = null;
+      document.getElementById('profileName').innerText = "Guest Visitor";
+      document.getElementById('profileEmail').innerText = "Login to view profile settings";
+      document.getElementById('authBtn').innerHTML = `<i class="fa-regular fa-user"></i> <span data-lang="auth_btn">Login / Sign Up</span>`;
+      if (logoutBtnContainer) logoutBtnContainer.classList.add('hidden');
+    }
+  });
+}
 
 // Multi-Language Support
 const translations = {
@@ -204,7 +245,6 @@ const platformsData = [
   }
 ];
 
-// Discount Calculation
 function calcDiscount(orig) {
   return Math.round(orig * 0.70);
 }
@@ -431,17 +471,50 @@ function switchAuthTab(type) {
   document.getElementById('signupTabBtn').classList.toggle('active', type === 'signup');
 }
 
-function handleAuth(e, type) {
+// Firebase Authentication Handler [cite: 44, 46]
+async function handleAuth(e, type) {
   e.preventDefault();
-  const name = type === 'login' ? document.getElementById('loginEmail').value.split('@')[0] : document.getElementById('signupName').value;
-  const email = type === 'login' ? document.getElementById('loginEmail').value : document.getElementById('signupEmail').value;
-  
-  currentUser = { name, email };
-  document.getElementById('profileName').innerText = name;
-  document.getElementById('profileEmail').innerText = email;
-  document.getElementById('authBtn').innerHTML = `<i class="fa-solid fa-user-check"></i> <span>${name}</span>`;
-  
-  toggleAuthPage(false);
+
+  if (!auth) {
+    alert("Firebase Auth is loading or unavailable. Please check your network connection.");
+    return;
+  }
+
+  if (type === 'login') {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
+      alert(`Welcome back, ${userCredential.user.displayName || userCredential.user.email}!`);
+      toggleAuthPage(false);
+    } catch (error) {
+      alert(`Login Error: ${error.message}`);
+    }
+
+  } else if (type === 'signup') {
+    const name = document.getElementById('signupName').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      await userCredential.user.updateProfile({ displayName: name });
+      alert(`Account created successfully for ${name}!`);
+      toggleAuthPage(false);
+    } catch (error) {
+      alert(`Registration Error: ${error.message}`);
+    }
+  }
+}
+
+function logoutUser() {
+  if (!auth) return;
+  auth.signOut().then(() => {
+    alert("Logged out successfully.");
+  }).catch((error) => {
+    console.error("Logout Error:", error);
+  });
 }
 
 // Theme Controls
