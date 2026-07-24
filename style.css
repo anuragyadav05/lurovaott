@@ -1,8 +1,7 @@
 /* ==========================================================================
-   LUROVA OTT - MOBILE-OPTIMIZED MASTER STYLESHEET
+   LUROVA OTT - MASTER STYLESHEET
    ========================================================================== */
 
-/* --- Dark Theme Variables (Default) --- */
 body.dark-theme {
   --bg-main: #090b0e;
   --bg-card: rgba(18, 22, 31, 0.85);
@@ -15,7 +14,6 @@ body.dark-theme {
   --logo-box-bg: rgba(255, 255, 255, 0.03);
 }
 
-/* --- Light Theme Variables --- */
 body.light-theme {
   --bg-main: #f4f6f9;
   --bg-card: rgba(255, 255, 255, 0.92);
@@ -58,7 +56,6 @@ body.no-scroll {
   overflow: hidden;
 }
 
-/* --- Ambient Orbs --- */
 .ambient-glow {
   position: fixed;
   border-radius: 50%;
@@ -73,7 +70,6 @@ body.no-scroll {
 .glow-2 { width: 500px; height: 500px; background: var(--secondary-glow); top: 35%; right: -150px; }
 .glow-3 { width: 350px; height: 350px; background: var(--accent-pink); bottom: 10%; left: 20%; }
 
-/* --- Text Gradients --- */
 .gradient-text {
   background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
   background-size: 200% auto;
@@ -84,7 +80,6 @@ body.no-scroll {
 
 @keyframes shine { to { background-position: 200% center; } }
 
-/* --- Navbar --- */
 .navbar {
   position: sticky; top: 0; z-index: 100;
   backdrop-filter: blur(20px);
@@ -121,7 +116,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 
 .nav-actions { display: flex; gap: 0.6rem; align-items: center; }
 
-/* --- Buttons --- */
 .btn {
   padding: 0.6rem 1.1rem; border-radius: var(--radius-md);
   font-weight: 600; cursor: pointer; border: none; outline: none;
@@ -150,7 +144,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; min-height: 36px; }
 .full-width { width: 100%; }
 
-/* --- Hero & Search --- */
 .hero { padding: 3rem 1.2rem 2.5rem; text-align: center; max-width: 900px; margin: 0 auto; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -186,7 +179,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 .stat-card h3 { font-size: 1.4rem; font-weight: 800; }
 .stat-card p { font-size: 0.75rem; color: var(--text-muted); }
 
-/* --- Catalog Grid --- */
 .catalog-section { max-width: 1280px; margin: 2rem auto; padding: 0 1.2rem; }
 .section-header { text-align: center; margin-bottom: 2rem; }
 .section-header h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin-bottom: 0.5rem; }
@@ -205,7 +197,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 
 .plans-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.2rem; }
 
-/* --- Optimized Cards & Fixed App Image Container --- */
 .plan-card {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
@@ -274,7 +265,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
   transition: var(--transition-smooth);
 }
 
-/* --- FULL PAGE AUTHENTICATION SCREEN --- */
 .full-auth-screen {
   position: fixed;
   top: 0; left: 0;
@@ -336,7 +326,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 .auth-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-bottom: 1.2rem; }
 .auth-options a { color: var(--primary-glow); text-decoration: none; }
 
-/* --- Trust & FAQ Sections --- */
 .trust-section { max-width: 1280px; margin: 3.5rem auto; padding: 0 1.2rem; }
 .trust-container { padding: 2rem 1.5rem; border-radius: var(--radius-lg); }
 .trust-header { text-align: center; margin-bottom: 2rem; }
@@ -355,7 +344,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 .faq-item.active .faq-answer { display: block; }
 .faq-item.active .faq-question i { transform: rotate(180deg); }
 
-/* --- Modals & Settings Drawer --- */
 .modal {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
@@ -431,7 +419,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .hidden { display: none !important; }
 
-/* --- MEDIA QUERIES FOR MOBILE & TABLET --- */
 @media (max-width: 850px) {
   .mobile-hamburger { display: block; }
   
