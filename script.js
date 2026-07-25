@@ -28,22 +28,24 @@ let currentUser = null;
 
 // Redirect to Single Household Auth Portal
 function redirectToAccountPortal() {
-  const returnUrl = encodeURIComponent(window.location.href);
-  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}`;
+  const currentCleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+  const returnUrl = encodeURIComponent(currentCleanUrl);
+  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&redirect=${returnUrl}`;
 }
 
 // Top Right Navigation Button Click Handling
 function handleAuthButtonClick() {
   if (currentUser) {
-    toggleSettingsDrawer();
+    toggleSettingsDrawer(); // Opens profile drawer on OTT website directly
   } else {
-    redirectToAccountPortal();
+    redirectToAccountPortal(); // Redirects to https://account.lurova.life/
   }
 }
 
 // Persistent Authentication State Sync via Firebase Shared Project
 if (auth) {
   auth.onAuthStateChanged((user) => {
+    const authBtn = document.getElementById('authBtn');
     const authBtnIcon = document.getElementById('authBtnIcon');
     const authBtnText = document.getElementById('authBtnText');
     const drawerLoginBtn = document.getElementById('drawerLoginBtn');
@@ -59,13 +61,14 @@ if (auth) {
       document.getElementById('profileName').innerText = currentUser.name;
       document.getElementById('profileEmail').innerText = currentUser.email;
       
+      if (authBtn) authBtn.classList.add('user-logged-in');
       if (authBtnIcon) authBtnIcon.className = "fa-solid fa-circle-user";
       if (authBtnText) authBtnText.innerText = currentUser.name;
       
       if (drawerLoginBtn) drawerLoginBtn.classList.add('hidden');
       if (drawerLogoutBtn) drawerLogoutBtn.classList.remove('hidden');
 
-      // Autofill activation contact input if present
+      // Auto-fill activation contact input if checkout modal opens
       const targetContactInput = document.getElementById('targetContact');
       if (targetContactInput && !targetContactInput.value) {
         targetContactInput.value = currentUser.email;
@@ -75,6 +78,7 @@ if (auth) {
       document.getElementById('profileName').innerText = "Guest Visitor";
       document.getElementById('profileEmail').innerText = "Login via Lurova Account";
       
+      if (authBtn) authBtn.classList.remove('user-logged-in');
       if (authBtnIcon) authBtnIcon.className = "fa-regular fa-user";
       if (authBtnText) authBtnText.innerText = "Login / Sign Up";
       
