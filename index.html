@@ -5,21 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>LUROVA OTT | Premium Subscriptions at Flat 30% Off</title>
   
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+  <link rel="dns-prefetch" href="https://assets.nflxext.com" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   
   <link rel="stylesheet" href="style.css" />
   
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" defer></script>
+  <script src="script.js" defer></script>
 </head>
 <body class="dark-theme">
 
   <div class="ambient-glow glow-1"></div>
   <div class="ambient-glow glow-2"></div>
-  <div class="ambient-glow glow-3"></div>
 
   <div id="mainWebsite">
     <nav class="navbar">
@@ -260,16 +267,14 @@
     <div class="modal-content glass-card modal-lg">
       <button class="close-btn" onclick="closeModal('planDetailModal')">&times;</button>
       
-      <div class="modal-header-app" id="modalAppHeader">
-        </div>
+      <div class="modal-header-app" id="modalAppHeader"></div>
 
       <div class="duration-selector">
         <button class="duration-btn active" id="btnMonthly" onclick="selectDuration('monthly')">Monthly Plan</button>
         <button class="duration-btn" id="btnYearly" onclick="selectDuration('yearly')">Yearly Plan</button>
       </div>
 
-      <div class="sub-plans-container" id="subPlansContainer">
-        </div>
+      <div class="sub-plans-container" id="subPlansContainer"></div>
 
       <div class="activation-form">
         <label><strong>Enter Target Email or Phone for Subscription:</strong></label>
@@ -321,6 +326,5 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
 </body>
 </html>
