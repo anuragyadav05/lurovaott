@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH DESKTOP & MOBILE SESSION SYNC
+   LUROVA OTT - SAFARI COMPATIBLE CROSS-SITE AUTHENTICATION SCRIPT
    ========================================================================== */
 
 const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
@@ -203,7 +203,6 @@ function calcDiscount(orig) {
   return Math.round(orig * 0.70);
 }
 
-// Render Platform Cards
 function renderCatalog(filter = 'all', searchQuery = '') {
   const grid = document.getElementById('plansGrid');
   if (!grid) return;
@@ -260,7 +259,7 @@ function renderCatalog(filter = 'all', searchQuery = '') {
   grid.appendChild(fragment);
 }
 
-// Redirect Handlers
+// Redirect Utilities
 function redirectToAccountPortal() {
   const cleanUrl = encodeURIComponent(window.location.protocol + "//" + window.location.host + window.location.pathname);
   window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${cleanUrl}&redirect=${cleanUrl}`;
@@ -270,7 +269,7 @@ function goToAccountProfile() {
   window.location.href = ACCOUNT_PORTAL_URL;
 }
 
-// Central UI Updater
+// Unified UI Renderer
 function updateUIWithUser(user) {
   const authBtn = document.getElementById('authBtn');
   const authBtnIcon = document.getElementById('authBtnIcon');
@@ -325,45 +324,28 @@ function handleAuthButtonClick() {
   }
 }
 
-// Local Storage Session Check
-function checkStoredUserSession() {
-  const stored = localStorage.getItem('lurova_user_session');
-  if (stored) {
-    try {
-      const user = JSON.parse(stored);
-      if (user && user.email) {
-        updateUIWithUser(user);
-        return true;
-      }
-    } catch (e) {
-      localStorage.removeItem('lurova_user_session');
-    }
+/* ==========================================================================
+   SAFARI SAFEKEEPER STORAGE & URL PARSER LOGIC
+   ========================================================================== */
+
+function saveSessionData(userData) {
+  try {
+    localStorage.setItem('lurova_user_session', JSON.stringify(userData));
+    sessionStorage.setItem('lurova_user_session', JSON.stringify(userData));
+    document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
+  } catch (e) {
+    console.error("Storage save error:", e);
   }
-  return false;
 }
 
-// Domain Cookie Check
-function checkSharedDomainCookie() {
-  const name = "lurova_user=";
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const ca = decodedCookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i].trim();
-    if (c.indexOf(name) === 0) {
-      try {
-        const user = JSON.parse(c.substring(name.length, c.length));
-        if (user && user.email) {
-          localStorage.setItem('lurova_user_session', JSON.stringify(user));
-          updateUIWithUser(user);
-          return true;
-        }
-      } catch (e) {}
-    }
-  }
-  return false;
+function clearSessionData() {
+  try {
+    localStorage.removeItem('lurova_user_session');
+    sessionStorage.removeItem('lurova_user_session');
+    document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
+  } catch (e) {}
 }
 
-// Check URL Parameters when redirected back from account portal
 function checkUrlAuthParameters() {
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email') || urlParams.get('user_email');
@@ -374,14 +356,13 @@ function checkUrlAuthParameters() {
     const userData = {
       name: name || (email ? email.split('@')[0] : "Subscriber"),
       email: email || "user@lurova.life",
-      uid: uid || "local_session"
+      uid: uid || "safari_session"
     };
     
-    localStorage.setItem('lurova_user_session', JSON.stringify(userData));
-    document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
-    
+    saveSessionData(userData);
     updateUIWithUser(userData);
 
+    // Clean query parameters from address bar seamlessly
     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
     return true;
@@ -389,14 +370,53 @@ function checkUrlAuthParameters() {
   return false;
 }
 
-// Master Session Verification
-function verifySessionState() {
-  if (checkUrlAuthParameters()) return;
-  if (checkSharedDomainCookie()) return;
-  if (checkStoredUserSession()) return;
+function checkStoredUserSession() {
+  // Check LocalStorage
+  let stored = localStorage.getItem('lurova_user_session');
+  // Fallback for Safari Private Browsing
+  if (!stored) stored = sessionStorage.getItem('lurova_user_session');
+
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      if (user && user.email) {
+        updateUIWithUser(user);
+        return true;
+      }
+    } catch (e) {
+      clearSessionData();
+    }
+  }
+  return false;
 }
 
-// Firebase SDK Initializer
+function checkSharedDomainCookie() {
+  const name = "lurova_user=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i].trim();
+    if (c.indexOf(name) === 0) {
+      try {
+        const user = JSON.parse(c.substring(name.length, c.length));
+        if (user && user.email) {
+          saveSessionData(user);
+          updateUIWithUser(user);
+          return true;
+        }
+      } catch (e) {}
+    }
+  }
+  return false;
+}
+
+function verifySessionState() {
+  if (checkUrlAuthParameters()) return true;
+  if (checkStoredUserSession()) return true;
+  if (checkSharedDomainCookie()) return true;
+  return false;
+}
+
 function initFirebase() {
   if (typeof firebase !== 'undefined' && !firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
@@ -409,12 +429,11 @@ function initFirebase() {
           email: user.email,
           uid: user.uid
         };
-        localStorage.setItem('lurova_user_session', JSON.stringify(userData));
-        document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
+        saveSessionData(userData);
         updateUIWithUser(userData);
       } else {
-        // DO NOT delete local session on null unless there is NO local storage or cookie session!
-        if (!checkSharedDomainCookie() && !checkStoredUserSession() && !checkUrlAuthParameters()) {
+        // In Safari, DO NOT logout if local session exists!
+        if (!verifySessionState()) {
           updateUIWithUser(null);
         }
       }
@@ -422,10 +441,8 @@ function initFirebase() {
   }
 }
 
-// Explicit Logout Execution
 function logoutUser() {
-  localStorage.removeItem('lurova_user_session');
-  document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
+  clearSessionData();
   if (auth) {
     auth.signOut().finally(() => {
       updateUIWithUser(null);
@@ -437,7 +454,7 @@ function logoutUser() {
   }
 }
 
-// Translations
+// Language Translations
 const translations = {
   en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Accounts • 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Delivery", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
   hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
@@ -455,7 +472,6 @@ function changeLanguage(langCode) {
   });
 }
 
-// UI Toggle Handlers
 function toggleMobileMenu() {
   const navLinks = document.getElementById('navLinks');
   const hamburger = document.getElementById('hamburgerBtn');
@@ -618,21 +634,29 @@ function adjustGlow(val) {
   document.querySelectorAll('.ambient-glow').forEach(el => el.style.opacity = val / 15); 
 }
 
-// App Initialization Point
+// Primary Application Startup Routine
 function initApp() {
   renderCatalog('all');
   verifySessionState();
   setTimeout(initFirebase, 100);
 }
 
-// Real-Time Cross-Tab Synchronization
+// Special Safari Event Handling for Back/Forward Restore & Tab Focus
+window.addEventListener('pageshow', (event) => {
+  verifySessionState();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    verifySessionState();
+  }
+});
+
 window.addEventListener('storage', (e) => {
   if (e.key === 'lurova_user_session') {
     verifySessionState();
   }
 });
-
-window.addEventListener('pageshow', verifySessionState);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
