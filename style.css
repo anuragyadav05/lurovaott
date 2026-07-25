@@ -146,9 +146,10 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.8); }
 }
 
 .profile-badge-btn.user-logged-in {
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(99, 102, 241, 0.18);
   border-color: var(--primary-glow);
   color: #fff;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
 }
 
 .profile-badge-btn.user-logged-in i {
