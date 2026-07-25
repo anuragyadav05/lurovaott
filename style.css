@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LUROVA OTT - HIGH-PERFORMANCE OPTIMIZED STYLESHEET
+   LUROVA OTT - SAFARI & MOBILE OPTIMIZED STYLESHEET
    ========================================================================== */
 
 body.dark-theme {
@@ -40,7 +40,7 @@ body.light-theme {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -60,11 +60,12 @@ body.no-scroll {
   position: fixed;
   border-radius: 50%;
   filter: blur(60px);
+  -webkit-filter: blur(60px);
   z-index: -1;
   pointer-events: none;
   opacity: var(--ambient-opacity);
-  will-change: opacity;
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .glow-1 { width: 350px; height: 350px; background: var(--primary-glow); top: -80px; left: -80px; }
@@ -76,10 +77,11 @@ body.no-scroll {
   -webkit-text-fill-color: transparent;
 }
 
-/* Navigation Bar */
 .navbar {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(10, 12, 16, 0.88);
+  background: rgba(10, 12, 16, 0.92);
+  -webkit-backdrop-filter: blur(15px);
+  backdrop-filter: blur(15px);
   border-bottom: 1px solid var(--border-glass);
 }
 
@@ -111,7 +113,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.92); }
 
 .nav-actions { display: flex; gap: 0.6rem; align-items: center; }
 
-/* Buttons */
 .btn {
   padding: 0.6rem 1.1rem; border-radius: var(--radius-md);
   font-weight: 600; cursor: pointer; border: none; outline: none;
@@ -147,7 +148,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.92); }
 .btn-icon { background: var(--bg-card); border: 1px solid var(--border-glass); color: var(--text-main); padding: 0.6rem; min-width: 40px; }
 .full-width { width: 100%; }
 
-/* Hero Section */
 .hero { padding: 2.5rem 1.2rem 2rem; text-align: center; max-width: 900px; margin: 0 auto; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -182,7 +182,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.92); }
 .stat-card h3 { font-size: 1.3rem; font-weight: 800; }
 .stat-card p { font-size: 0.72rem; color: var(--text-muted); }
 
-/* Catalog Section */
 .catalog-section { max-width: 1280px; margin: 1.5rem auto; padding: 0 1.2rem; }
 .section-header { text-align: center; margin-bottom: 1.5rem; }
 .section-header h2 { font-size: clamp(1.5rem, 3.8vw, 2rem); margin-bottom: 0.4rem; }
