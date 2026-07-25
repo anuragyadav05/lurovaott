@@ -1,10 +1,11 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH FIREBASE AUTH & MOBILE HANDLING
+   LUROVA OTT - CORE SCRIPT WITH CENTRAL SINGLE HOUSEHOLD LOGIN INTEGRATION
    ========================================================================== */
 
 const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
+const ACCOUNT_PORTAL_URL = "https://account.lurova.life/";
 
-// Firebase Configuration [cite: 40]
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCZvJC6xQkhuM7MkybSwn7FqW5W-ByTKFk",
   authDomain: "lurova-account.firebaseapp.com",
@@ -14,8 +15,8 @@ const firebaseConfig = {
   appId: "1:925302881748:web:da8f9f6b298e27b758ea41"
 };
 
-// Initialize Firebase App & Auth [cite: 43]
-if (typeof firebase !== 'undefined') {
+// Initialize Firebase App & Auth
+if (typeof firebase !== 'undefined' && !firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 const auth = typeof firebase !== 'undefined' ? firebase.auth() : null;
@@ -25,10 +26,29 @@ let currentDuration = 'monthly';
 let selectedTier = null;
 let currentUser = null;
 
-// Persistent Authentication State Sync [cite: 44, 46]
+// Redirect to Single Household Auth Portal
+function redirectToAccountPortal() {
+  const returnUrl = encodeURIComponent(window.location.href);
+  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}`;
+}
+
+// Top Right Navigation Button Click Handling
+function handleAuthButtonClick() {
+  if (currentUser) {
+    toggleSettingsDrawer();
+  } else {
+    redirectToAccountPortal();
+  }
+}
+
+// Persistent Authentication State Sync via Firebase Shared Project
 if (auth) {
   auth.onAuthStateChanged((user) => {
-    const logoutBtnContainer = document.getElementById('logoutContainer');
+    const authBtnIcon = document.getElementById('authBtnIcon');
+    const authBtnText = document.getElementById('authBtnText');
+    const drawerLoginBtn = document.getElementById('drawerLoginBtn');
+    const drawerLogoutBtn = document.getElementById('drawerLogoutBtn');
+
     if (user) {
       currentUser = {
         name: user.displayName || user.email.split('@')[0],
@@ -38,14 +58,28 @@ if (auth) {
       
       document.getElementById('profileName').innerText = currentUser.name;
       document.getElementById('profileEmail').innerText = currentUser.email;
-      document.getElementById('authBtn').innerHTML = `<i class="fa-solid fa-user-check"></i> <span>${currentUser.name}</span>`;
-      if (logoutBtnContainer) logoutBtnContainer.classList.remove('hidden');
+      
+      if (authBtnIcon) authBtnIcon.className = "fa-solid fa-circle-user";
+      if (authBtnText) authBtnText.innerText = currentUser.name;
+      
+      if (drawerLoginBtn) drawerLoginBtn.classList.add('hidden');
+      if (drawerLogoutBtn) drawerLogoutBtn.classList.remove('hidden');
+
+      // Autofill activation contact input if present
+      const targetContactInput = document.getElementById('targetContact');
+      if (targetContactInput && !targetContactInput.value) {
+        targetContactInput.value = currentUser.email;
+      }
     } else {
       currentUser = null;
       document.getElementById('profileName').innerText = "Guest Visitor";
-      document.getElementById('profileEmail').innerText = "Login to view profile settings";
-      document.getElementById('authBtn').innerHTML = `<i class="fa-regular fa-user"></i> <span data-lang="auth_btn">Login / Sign Up</span>`;
-      if (logoutBtnContainer) logoutBtnContainer.classList.add('hidden');
+      document.getElementById('profileEmail').innerText = "Login via Lurova Account";
+      
+      if (authBtnIcon) authBtnIcon.className = "fa-regular fa-user";
+      if (authBtnText) authBtnText.innerText = "Login / Sign Up";
+      
+      if (drawerLoginBtn) drawerLoginBtn.classList.remove('hidden');
+      if (drawerLogoutBtn) drawerLogoutBtn.classList.add('hidden');
     }
   });
 }
@@ -436,7 +470,7 @@ function startRazorpayPayment() {
       alert(`🎉 SUCCESS! Payment ID: ${response.razorpay_payment_id}\n\nYour ${selectedApp.name} subscription is being activated on ${contact}. Expected activation time: ~15 mins.`);
     },
     prefill: {
-      email: contact.includes('@') ? contact : "customer@lurovaott.com",
+      email: contact.includes('@') ? contact : (currentUser ? currentUser.email : "customer@lurovaott.com"),
       contact: !contact.includes('@') ? contact : "9876543210"
     },
     theme: { color: "#6366f1" },
@@ -449,63 +483,6 @@ function startRazorpayPayment() {
 
   const rzp = new Razorpay(options);
   rzp.open();
-}
-
-// Toggle Full-Page Authentication Screen
-function toggleAuthPage(show) {
-  const fullAuth = document.getElementById('fullAuthPage');
-  if(show) {
-    fullAuth.classList.remove('hidden');
-    document.body.classList.add('no-scroll');
-    closeMobileMenu();
-  } else {
-    fullAuth.classList.add('hidden');
-    document.body.classList.remove('no-scroll');
-  }
-}
-
-function switchAuthTab(type) {
-  document.getElementById('loginForm').classList.toggle('hidden', type !== 'login');
-  document.getElementById('signupForm').classList.toggle('hidden', type !== 'signup');
-  document.getElementById('loginTabBtn').classList.toggle('active', type === 'login');
-  document.getElementById('signupTabBtn').classList.toggle('active', type === 'signup');
-}
-
-// Firebase Authentication Handler [cite: 44, 46]
-async function handleAuth(e, type) {
-  e.preventDefault();
-
-  if (!auth) {
-    alert("Firebase Auth is loading or unavailable. Please check your network connection.");
-    return;
-  }
-
-  if (type === 'login') {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    try {
-      const userCredential = await auth.signInWithEmailAndPassword(email, password);
-      alert(`Welcome back, ${userCredential.user.displayName || userCredential.user.email}!`);
-      toggleAuthPage(false);
-    } catch (error) {
-      alert(`Login Error: ${error.message}`);
-    }
-
-  } else if (type === 'signup') {
-    const name = document.getElementById('signupName').value;
-    const email = document.getElementById('signupEmail').value;
-    const password = document.getElementById('signupPassword').value;
-
-    try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-      await userCredential.user.updateProfile({ displayName: name });
-      alert(`Account created successfully for ${name}!`);
-      toggleAuthPage(false);
-    } catch (error) {
-      alert(`Registration Error: ${error.message}`);
-    }
-  }
 }
 
 function logoutUser() {
