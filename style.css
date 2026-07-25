@@ -50,14 +50,12 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
   width: 100%;
-  contain: paint layout;
 }
 
 body.no-scroll {
   overflow: hidden;
 }
 
-/* Light, GPU-friendly Ambient Lighting */
 .ambient-glow {
   position: fixed;
   border-radius: 50%;
@@ -212,7 +210,6 @@ body.light-theme .navbar { background: rgba(255, 255, 255, 0.92); }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  will-change: transform;
 }
 
 .plan-card:hover {
