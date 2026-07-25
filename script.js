@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH AUTOMATIC LOGOUT SYNC & REDIRECT HANDLING
+   LUROVA OTT - CORE SCRIPT WITH MOBILE BFCache & CROSS-DOMAIN COOKIE PARSER
    ========================================================================== */
 
 const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
@@ -89,7 +89,30 @@ function handleAuthButtonClick() {
   }
 }
 
-// Check URL Parameters when redirected back from account.lurova.life
+// 1. Read Cookie Set across .lurova.life domain (Best for Mobile Browsers)
+function checkSharedDomainCookie() {
+  const name = "lurova_user=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i].trim();
+    if (c.indexOf(name) === 0) {
+      try {
+        const user = JSON.parse(c.substring(name.length, c.length));
+        if (user && user.email) {
+          localStorage.setItem('lurova_user_session', JSON.stringify(user));
+          updateUIWithUser(user);
+          return true;
+        }
+      } catch (e) {
+        console.error("Cookie parse error:", e);
+      }
+    }
+  }
+  return false;
+}
+
+// 2. Check URL Parameters when redirected back from account.lurova.life
 function checkUrlAuthParameters() {
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email') || urlParams.get('user_email');
@@ -103,11 +126,13 @@ function checkUrlAuthParameters() {
       uid: uid || "local_session"
     };
     
-    // Save session locally
+    // Save session locally and into root domain cookie
     localStorage.setItem('lurova_user_session', JSON.stringify(userData));
+    document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
+    
     updateUIWithUser(userData);
 
-    // Clean query parameters from address bar
+    // Clean query parameters from address bar seamlessly
     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
     return true;
@@ -115,7 +140,7 @@ function checkUrlAuthParameters() {
   return false;
 }
 
-// Restore saved session from Local Storage
+// 3. Restore saved session from Local Storage
 function checkStoredUserSession() {
   const stored = localStorage.getItem('lurova_user_session');
   if (stored) {
@@ -130,7 +155,14 @@ function checkStoredUserSession() {
   return false;
 }
 
-// Real-Time Firebase Listener: Automatically logs out OTT website if logged out at account.lurova.life
+// Master Function to Check Session Across All Sources
+function verifySessionState() {
+  if (checkUrlAuthParameters()) return;
+  if (checkSharedDomainCookie()) return;
+  if (checkStoredUserSession()) return;
+}
+
+// Firebase Auth State Listener
 if (auth) {
   auth.onAuthStateChanged((user) => {
     if (user) {
@@ -140,11 +172,13 @@ if (auth) {
         uid: user.uid
       };
       localStorage.setItem('lurova_user_session', JSON.stringify(userData));
+      document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
       updateUIWithUser(userData);
     } else {
-      // Firebase reports logged out - clear local session immediately
+      // Clear storage and cookies on logout
       localStorage.removeItem('lurova_user_session');
-      if (!checkUrlAuthParameters()) {
+      document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
+      if (!checkUrlAuthParameters() && !checkSharedDomainCookie()) {
         updateUIWithUser(null);
       }
     }
@@ -154,6 +188,7 @@ if (auth) {
 // Logout Action
 function logoutUser() {
   localStorage.removeItem('lurova_user_session');
+  document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
   if (auth) {
     auth.signOut().finally(() => {
       updateUIWithUser(null);
@@ -165,7 +200,7 @@ function logoutUser() {
   }
 }
 
-// Multi-Language Support
+// Translations
 const translations = {
   en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Accounts • 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Delivery", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
   hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
@@ -175,7 +210,7 @@ const translations = {
   mr: { nav_home: "मुख्य पृष्ठ", nav_plans: "सब्सक्रिप्शन", auth_btn: "लॉगिन करा", search_btn: "शोधा" }
 };
 
-// Catalog Dataset
+// Platform Catalog Data
 const platformsData = [
   {
     id: "netflix",
@@ -611,13 +646,22 @@ function closeSettingsDrawer() {
 
 function adjustGlow(val) { document.querySelectorAll('.ambient-glow').forEach(el => el.style.opacity = val / 10); }
 
+// Initialize App
 function initApp() {
   renderCatalog('all');
-  
-  if (!checkUrlAuthParameters()) {
-    checkStoredUserSession();
-  }
+  verifySessionState();
 }
+
+// Listen to Mobile BFCache & Tab Visibility events to fix mobile login restore issue
+window.addEventListener('pageshow', (event) => {
+  verifySessionState();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    verifySessionState();
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
