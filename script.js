@@ -26,19 +26,25 @@ let currentDuration = 'monthly';
 let selectedTier = null;
 let currentUser = null;
 
-// Redirect to Central Account Portal with exact return URL
+// Redirect to Central Account Portal for Login
 function redirectToAccountPortal() {
   const currentCleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
   const returnUrl = encodeURIComponent(currentCleanUrl);
-  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&returnUrl=${returnUrl}`;
+  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&redirect=${returnUrl}`;
 }
 
-// Update Website UI Elements for Logged-In or Logged-Out Users
+// Redirect to Profile Page on account.lurova.life when clicking Profile Icon
+function goToAccountProfile() {
+  window.location.href = ACCOUNT_PORTAL_URL;
+}
+
+// Update UI depending on Auth state
 function updateUIWithUser(user) {
   const authBtn = document.getElementById('authBtn');
   const authBtnIcon = document.getElementById('authBtnIcon');
   const authBtnText = document.getElementById('authBtnText');
   const drawerLoginBtn = document.getElementById('drawerLoginBtn');
+  const drawerProfileBtn = document.getElementById('drawerProfileBtn');
   const drawerLogoutBtn = document.getElementById('drawerLogoutBtn');
 
   if (user) {
@@ -52,6 +58,7 @@ function updateUIWithUser(user) {
     if (authBtnText) authBtnText.innerText = currentUser.name || "Profile";
 
     if (drawerLoginBtn) drawerLoginBtn.classList.add('hidden');
+    if (drawerProfileBtn) drawerProfileBtn.classList.remove('hidden');
     if (drawerLogoutBtn) drawerLogoutBtn.classList.remove('hidden');
 
     const targetContactInput = document.getElementById('targetContact');
@@ -68,20 +75,21 @@ function updateUIWithUser(user) {
     if (authBtnText) authBtnText.innerText = "Login / Sign Up";
 
     if (drawerLoginBtn) drawerLoginBtn.classList.remove('hidden');
+    if (drawerProfileBtn) drawerProfileBtn.classList.add('hidden');
     if (drawerLogoutBtn) drawerLogoutBtn.classList.add('hidden');
   }
 }
 
-// Top Right Profile / Login Button Handler
+// Top Right Button Action: If Logged in -> Go to Profile Page; Else -> Go to Login Page
 function handleAuthButtonClick() {
   if (currentUser) {
-    toggleSettingsDrawer(); // Opens on-site profile drawer
+    goToAccountProfile(); // Directly redirects to profile on https://account.lurova.life/
   } else {
-    redirectToAccountPortal(); // Redirects to https://account.lurova.life/
+    redirectToAccountPortal(); // Directly redirects to login page
   }
 }
 
-// Parse Login Session Returned via URL Parameters from Central Portal
+// Parse Login Session Returned via URL Parameters
 function checkUrlAuthParameters() {
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email') || urlParams.get('user_email');
@@ -95,11 +103,11 @@ function checkUrlAuthParameters() {
       uid: uid || "local_session"
     };
     
-    // Cache local session so it persists on page refreshes
+    // Save locally so the session persists
     localStorage.setItem('lurova_user_session', JSON.stringify(userData));
     updateUIWithUser(userData);
 
-    // Clean URL search parameters seamlessly without page reload
+    // Clean URL query parameters
     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
     return true;
@@ -107,7 +115,7 @@ function checkUrlAuthParameters() {
   return false;
 }
 
-// Restore user session from localStorage if present
+// Check stored session in localStorage
 function checkStoredUserSession() {
   const stored = localStorage.getItem('lurova_user_session');
   if (stored) {
@@ -122,7 +130,7 @@ function checkStoredUserSession() {
   return false;
 }
 
-// Persistent Authentication State Sync via Firebase
+// Firebase Auth State Listener
 if (auth) {
   auth.onAuthStateChanged((user) => {
     if (user) {
@@ -134,7 +142,6 @@ if (auth) {
       localStorage.setItem('lurova_user_session', JSON.stringify(userData));
       updateUIWithUser(userData);
     } else {
-      // If Firebase reports logged out, verify if local URL param session exists
       if (!checkUrlAuthParameters() && !checkStoredUserSession()) {
         updateUIWithUser(null);
       }
@@ -142,23 +149,23 @@ if (auth) {
   });
 }
 
-// User Logout Procedure
+// Logout Function
 function logoutUser() {
   localStorage.removeItem('lurova_user_session');
   if (auth) {
     auth.signOut().finally(() => {
       updateUIWithUser(null);
-      toggleSettingsDrawer();
+      closeSettingsDrawer();
       alert("Logged out successfully.");
     });
   } else {
     updateUIWithUser(null);
-    toggleSettingsDrawer();
+    closeSettingsDrawer();
     alert("Logged out successfully.");
   }
 }
 
-// Multi-Language Translations Dictionary
+// Translations
 const translations = {
   en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Accounts • 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Delivery", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
   hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
@@ -168,7 +175,7 @@ const translations = {
   mr: { nav_home: "मुख्य पृष्ठ", nav_plans: "सब्सक्रिप्शन", auth_btn: "लॉगिन करा", search_btn: "शोधा" }
 };
 
-// Subscriptions Platform Dataset
+// Platform Catalog Data
 const platformsData = [
   {
     id: "netflix",
@@ -605,6 +612,10 @@ function toggleSettingsDrawer() {
   closeMobileMenu();
 }
 
+function closeSettingsDrawer() {
+  document.getElementById('settingsDrawer').classList.remove('open');
+}
+
 function adjustGlow(val) { document.querySelectorAll('.ambient-glow').forEach(el => el.style.opacity = val / 10); }
 function respondCookie(acc) { document.getElementById('cookieDrawer').classList.remove('active'); }
 
@@ -612,7 +623,6 @@ function respondCookie(acc) { document.getElementById('cookieDrawer').classList.
 function initApp() {
   renderCatalog('all');
   
-  // Check auth session from URL or Local Storage
   if (!checkUrlAuthParameters()) {
     checkStoredUserSession();
   }
