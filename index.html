@@ -43,7 +43,7 @@
         </ul>
 
         <div class="nav-actions">
-          <button class="btn btn-outline" id="authBtn" onclick="handleAuthButtonClick()">
+          <button class="btn btn-outline profile-badge-btn" id="authBtn" onclick="handleAuthButtonClick()">
             <i class="fa-regular fa-user" id="authBtnIcon"></i> 
             <span id="authBtnText" data-lang="auth_btn">Login / Sign Up</span>
           </button>
@@ -203,7 +203,7 @@
 
   <div class="settings-drawer" id="settingsDrawer">
     <div class="drawer-header">
-      <h3><i class="fa-solid fa-sliders"></i> <span data-lang="settings_title">Web Settings</span></h3>
+      <h3><i class="fa-solid fa-sliders"></i> <span data-lang="settings_title">Profile & Settings</span></h3>
       <button class="close-btn" onclick="toggleSettingsDrawer()">&times;</button>
     </div>
     <div class="drawer-body">
@@ -269,7 +269,7 @@
         </div>
 
       <div class="activation-form">
-        <label><strong>Enter Target Email or Phone:</strong></label>
+        <label><strong>Enter Target Email or Phone for Subscription:</strong></label>
         <div class="input-group">
           <i class="fa-solid fa-mobile-screen-button"></i>
           <input type="text" id="targetContact" placeholder="e.g. 9876543210 or target@gmail.com" required />
