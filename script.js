@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH CENTRAL SINGLE HOUSEHOLD LOGIN INTEGRATION
+   LUROVA OTT - CORE SCRIPT WITH REAL-TIME REDIRECT PARSER & SSO STATE SYNC
    ========================================================================== */
 
 const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
@@ -26,69 +26,139 @@ let currentDuration = 'monthly';
 let selectedTier = null;
 let currentUser = null;
 
-// Redirect to Single Household Auth Portal
+// Redirect to Central Account Portal with exact return URL
 function redirectToAccountPortal() {
   const currentCleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
   const returnUrl = encodeURIComponent(currentCleanUrl);
-  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&redirect=${returnUrl}`;
+  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&returnUrl=${returnUrl}`;
 }
 
-// Top Right Navigation Button Click Handling
+// Update Website UI Elements for Logged-In or Logged-Out Users
+function updateUIWithUser(user) {
+  const authBtn = document.getElementById('authBtn');
+  const authBtnIcon = document.getElementById('authBtnIcon');
+  const authBtnText = document.getElementById('authBtnText');
+  const drawerLoginBtn = document.getElementById('drawerLoginBtn');
+  const drawerLogoutBtn = document.getElementById('drawerLogoutBtn');
+
+  if (user) {
+    currentUser = user;
+
+    document.getElementById('profileName').innerText = currentUser.name || "Subscriber";
+    document.getElementById('profileEmail').innerText = currentUser.email || "";
+
+    if (authBtn) authBtn.classList.add('user-logged-in');
+    if (authBtnIcon) authBtnIcon.className = "fa-solid fa-circle-user";
+    if (authBtnText) authBtnText.innerText = currentUser.name || "Profile";
+
+    if (drawerLoginBtn) drawerLoginBtn.classList.add('hidden');
+    if (drawerLogoutBtn) drawerLogoutBtn.classList.remove('hidden');
+
+    const targetContactInput = document.getElementById('targetContact');
+    if (targetContactInput && !targetContactInput.value && currentUser.email) {
+      targetContactInput.value = currentUser.email;
+    }
+  } else {
+    currentUser = null;
+    document.getElementById('profileName').innerText = "Guest Visitor";
+    document.getElementById('profileEmail').innerText = "Login via Lurova Account";
+
+    if (authBtn) authBtn.classList.remove('user-logged-in');
+    if (authBtnIcon) authBtnIcon.className = "fa-regular fa-user";
+    if (authBtnText) authBtnText.innerText = "Login / Sign Up";
+
+    if (drawerLoginBtn) drawerLoginBtn.classList.remove('hidden');
+    if (drawerLogoutBtn) drawerLogoutBtn.classList.add('hidden');
+  }
+}
+
+// Top Right Profile / Login Button Handler
 function handleAuthButtonClick() {
   if (currentUser) {
-    toggleSettingsDrawer(); // Opens profile drawer on OTT website directly
+    toggleSettingsDrawer(); // Opens on-site profile drawer
   } else {
     redirectToAccountPortal(); // Redirects to https://account.lurova.life/
   }
 }
 
-// Persistent Authentication State Sync via Firebase Shared Project
+// Parse Login Session Returned via URL Parameters from Central Portal
+function checkUrlAuthParameters() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const email = urlParams.get('email') || urlParams.get('user_email');
+  const name = urlParams.get('name') || urlParams.get('user_name') || urlParams.get('displayName');
+  const uid = urlParams.get('uid') || urlParams.get('user_id');
+
+  if (email || uid) {
+    const userData = {
+      name: name || (email ? email.split('@')[0] : "Subscriber"),
+      email: email || "user@lurova.life",
+      uid: uid || "local_session"
+    };
+    
+    // Cache local session so it persists on page refreshes
+    localStorage.setItem('lurova_user_session', JSON.stringify(userData));
+    updateUIWithUser(userData);
+
+    // Clean URL search parameters seamlessly without page reload
+    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+    return true;
+  }
+  return false;
+}
+
+// Restore user session from localStorage if present
+function checkStoredUserSession() {
+  const stored = localStorage.getItem('lurova_user_session');
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      updateUIWithUser(user);
+      return true;
+    } catch (e) {
+      localStorage.removeItem('lurova_user_session');
+    }
+  }
+  return false;
+}
+
+// Persistent Authentication State Sync via Firebase
 if (auth) {
   auth.onAuthStateChanged((user) => {
-    const authBtn = document.getElementById('authBtn');
-    const authBtnIcon = document.getElementById('authBtnIcon');
-    const authBtnText = document.getElementById('authBtnText');
-    const drawerLoginBtn = document.getElementById('drawerLoginBtn');
-    const drawerLogoutBtn = document.getElementById('drawerLogoutBtn');
-
     if (user) {
-      currentUser = {
+      const userData = {
         name: user.displayName || user.email.split('@')[0],
         email: user.email,
         uid: user.uid
       };
-      
-      document.getElementById('profileName').innerText = currentUser.name;
-      document.getElementById('profileEmail').innerText = currentUser.email;
-      
-      if (authBtn) authBtn.classList.add('user-logged-in');
-      if (authBtnIcon) authBtnIcon.className = "fa-solid fa-circle-user";
-      if (authBtnText) authBtnText.innerText = currentUser.name;
-      
-      if (drawerLoginBtn) drawerLoginBtn.classList.add('hidden');
-      if (drawerLogoutBtn) drawerLogoutBtn.classList.remove('hidden');
-
-      // Auto-fill activation contact input if checkout modal opens
-      const targetContactInput = document.getElementById('targetContact');
-      if (targetContactInput && !targetContactInput.value) {
-        targetContactInput.value = currentUser.email;
-      }
+      localStorage.setItem('lurova_user_session', JSON.stringify(userData));
+      updateUIWithUser(userData);
     } else {
-      currentUser = null;
-      document.getElementById('profileName').innerText = "Guest Visitor";
-      document.getElementById('profileEmail').innerText = "Login via Lurova Account";
-      
-      if (authBtn) authBtn.classList.remove('user-logged-in');
-      if (authBtnIcon) authBtnIcon.className = "fa-regular fa-user";
-      if (authBtnText) authBtnText.innerText = "Login / Sign Up";
-      
-      if (drawerLoginBtn) drawerLoginBtn.classList.remove('hidden');
-      if (drawerLogoutBtn) drawerLogoutBtn.classList.add('hidden');
+      // If Firebase reports logged out, verify if local URL param session exists
+      if (!checkUrlAuthParameters() && !checkStoredUserSession()) {
+        updateUIWithUser(null);
+      }
     }
   });
 }
 
-// Multi-Language Support
+// User Logout Procedure
+function logoutUser() {
+  localStorage.removeItem('lurova_user_session');
+  if (auth) {
+    auth.signOut().finally(() => {
+      updateUIWithUser(null);
+      toggleSettingsDrawer();
+      alert("Logged out successfully.");
+    });
+  } else {
+    updateUIWithUser(null);
+    toggleSettingsDrawer();
+    alert("Logged out successfully.");
+  }
+}
+
+// Multi-Language Translations Dictionary
 const translations = {
   en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Accounts • 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Delivery", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
   hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
@@ -98,7 +168,7 @@ const translations = {
   mr: { nav_home: "मुख्य पृष्ठ", nav_plans: "सब्सक्रिप्शन", auth_btn: "लॉगिन करा", search_btn: "शोधा" }
 };
 
-// Platforms Dataset
+// Subscriptions Platform Dataset
 const platformsData = [
   {
     id: "netflix",
@@ -489,15 +559,6 @@ function startRazorpayPayment() {
   rzp.open();
 }
 
-function logoutUser() {
-  if (!auth) return;
-  auth.signOut().then(() => {
-    alert("Logged out successfully.");
-  }).catch((error) => {
-    console.error("Logout Error:", error);
-  });
-}
-
 // Theme Controls
 function setTheme(mode) {
   if (mode === 'light') {
@@ -550,6 +611,12 @@ function respondCookie(acc) { document.getElementById('cookieDrawer').classList.
 // Safe Initialization
 function initApp() {
   renderCatalog('all');
+  
+  // Check auth session from URL or Local Storage
+  if (!checkUrlAuthParameters()) {
+    checkStoredUserSession();
+  }
+
   setTimeout(() => {
     const cookieEl = document.getElementById('cookieDrawer');
     if (cookieEl) cookieEl.classList.add('active');
