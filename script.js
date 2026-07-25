@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH REAL-TIME REDIRECT PARSER & SSO STATE SYNC
+   LUROVA OTT - CORE SCRIPT WITH AUTOMATIC LOGOUT SYNC & REDIRECT HANDLING
    ========================================================================== */
 
 const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
@@ -33,12 +33,12 @@ function redirectToAccountPortal() {
   window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&redirect=${returnUrl}`;
 }
 
-// Redirect to Profile Page on account.lurova.life when clicking Profile Icon
+// Redirect to Profile Page on account.lurova.life when Profile Button is clicked
 function goToAccountProfile() {
   window.location.href = ACCOUNT_PORTAL_URL;
 }
 
-// Update UI depending on Auth state
+// Update UI according to Auth State
 function updateUIWithUser(user) {
   const authBtn = document.getElementById('authBtn');
   const authBtnIcon = document.getElementById('authBtnIcon');
@@ -80,16 +80,16 @@ function updateUIWithUser(user) {
   }
 }
 
-// Top Right Button Action: If Logged in -> Go to Profile Page; Else -> Go to Login Page
+// Top Right Button Click Event
 function handleAuthButtonClick() {
   if (currentUser) {
-    goToAccountProfile(); // Directly redirects to profile on https://account.lurova.life/
+    goToAccountProfile(); // Redirects to account.lurova.life profile page
   } else {
-    redirectToAccountPortal(); // Directly redirects to login page
+    redirectToAccountPortal(); // Redirects to login page
   }
 }
 
-// Parse Login Session Returned via URL Parameters
+// Check URL Parameters when redirected back from account.lurova.life
 function checkUrlAuthParameters() {
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email') || urlParams.get('user_email');
@@ -103,11 +103,11 @@ function checkUrlAuthParameters() {
       uid: uid || "local_session"
     };
     
-    // Save locally so the session persists
+    // Save session locally
     localStorage.setItem('lurova_user_session', JSON.stringify(userData));
     updateUIWithUser(userData);
 
-    // Clean URL query parameters
+    // Clean query parameters from address bar
     const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
     window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
     return true;
@@ -115,7 +115,7 @@ function checkUrlAuthParameters() {
   return false;
 }
 
-// Check stored session in localStorage
+// Restore saved session from Local Storage
 function checkStoredUserSession() {
   const stored = localStorage.getItem('lurova_user_session');
   if (stored) {
@@ -130,7 +130,7 @@ function checkStoredUserSession() {
   return false;
 }
 
-// Firebase Auth State Listener
+// Real-Time Firebase Listener: Automatically logs out OTT website if logged out at account.lurova.life
 if (auth) {
   auth.onAuthStateChanged((user) => {
     if (user) {
@@ -142,30 +142,30 @@ if (auth) {
       localStorage.setItem('lurova_user_session', JSON.stringify(userData));
       updateUIWithUser(userData);
     } else {
-      if (!checkUrlAuthParameters() && !checkStoredUserSession()) {
+      // Firebase reports logged out - clear local session immediately
+      localStorage.removeItem('lurova_user_session');
+      if (!checkUrlAuthParameters()) {
         updateUIWithUser(null);
       }
     }
   });
 }
 
-// Logout Function
+// Logout Action
 function logoutUser() {
   localStorage.removeItem('lurova_user_session');
   if (auth) {
     auth.signOut().finally(() => {
       updateUIWithUser(null);
       closeSettingsDrawer();
-      alert("Logged out successfully.");
     });
   } else {
     updateUIWithUser(null);
     closeSettingsDrawer();
-    alert("Logged out successfully.");
   }
 }
 
-// Translations
+// Multi-Language Support
 const translations = {
   en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Accounts • 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Delivery", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
   hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
@@ -175,7 +175,7 @@ const translations = {
   mr: { nav_home: "मुख्य पृष्ठ", nav_plans: "सब्सक्रिप्शन", auth_btn: "लॉगिन करा", search_btn: "शोधा" }
 };
 
-// Platform Catalog Data
+// Catalog Dataset
 const platformsData = [
   {
     id: "netflix",
@@ -364,7 +364,7 @@ function calcDiscount(orig) {
   return Math.round(orig * 0.70);
 }
 
-// Mobile Navigation Controls
+// Mobile Navigation
 function toggleMobileMenu() {
   const navLinks = document.getElementById('navLinks');
   const hamburger = document.getElementById('hamburgerBtn');
@@ -387,7 +387,7 @@ function closeMobileMenu() {
   document.body.classList.remove('no-scroll');
 }
 
-// Render Platform Catalog Grid
+// Render Catalog
 function renderCatalog(filter = 'all', searchQuery = '') {
   const grid = document.getElementById('plansGrid');
   if (!grid) return;
@@ -442,7 +442,6 @@ function renderCatalog(filter = 'all', searchQuery = '') {
   });
 }
 
-// Search and Category Filters
 function filterPlans(cat, e) {
   document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
   if (e && e.target) {
@@ -457,7 +456,6 @@ function handleSearch() {
   renderCatalog('all', searchVal);
 }
 
-// Plan Options Modal System
 function openPlanModal(appId) {
   selectedApp = platformsData.find(a => a.id === appId);
   currentDuration = 'monthly';
@@ -523,7 +521,6 @@ function updateDurationUI() {
   });
 }
 
-// Razorpay Checkout Execution
 function startRazorpayPayment() {
   const contact = document.getElementById('targetContact').value;
   if (!contact) {
@@ -566,7 +563,6 @@ function startRazorpayPayment() {
   rzp.open();
 }
 
-// Theme Controls
 function setTheme(mode) {
   if (mode === 'light') {
     document.body.classList.remove('dark-theme');
@@ -581,7 +577,6 @@ function setTheme(mode) {
   }
 }
 
-// Regional Language Translation
 function changeLanguage(langCode) {
   const dict = translations[langCode] || translations['en'];
   document.querySelectorAll('[data-lang]').forEach(el => {
@@ -590,13 +585,11 @@ function changeLanguage(langCode) {
   });
 }
 
-// FAQ Accordion
 function toggleFaq(el) {
   const item = el.parentElement;
   item.classList.toggle('active');
 }
 
-// Modal Utilities
 function openModal(id) { 
   document.getElementById(id).classList.add('active');
   document.body.classList.add('no-scroll');
@@ -617,20 +610,13 @@ function closeSettingsDrawer() {
 }
 
 function adjustGlow(val) { document.querySelectorAll('.ambient-glow').forEach(el => el.style.opacity = val / 10); }
-function respondCookie(acc) { document.getElementById('cookieDrawer').classList.remove('active'); }
 
-// Safe Initialization
 function initApp() {
   renderCatalog('all');
   
   if (!checkUrlAuthParameters()) {
     checkStoredUserSession();
   }
-
-  setTimeout(() => {
-    const cookieEl = document.getElementById('cookieDrawer');
-    if (cookieEl) cookieEl.classList.add('active');
-  }, 2000);
 }
 
 if (document.readyState === 'loading') {
