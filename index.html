@@ -43,9 +43,11 @@
         </ul>
 
         <div class="nav-actions">
-          <button class="btn btn-outline" id="authBtn" onclick="toggleAuthPage(true)">
-            <i class="fa-regular fa-user"></i> <span data-lang="auth_btn">Login / Sign Up</span>
+          <button class="btn btn-outline" id="authBtn" onclick="handleAuthButtonClick()">
+            <i class="fa-regular fa-user" id="authBtnIcon"></i> 
+            <span id="authBtnText" data-lang="auth_btn">Login / Sign Up</span>
           </button>
+          
           <button class="btn btn-icon" id="settingsBtn" onclick="toggleSettingsDrawer()" aria-label="Open Settings">
             <i class="fa-solid fa-sliders"></i>
           </button>
@@ -199,75 +201,6 @@
     </footer>
   </div>
 
-  <div id="fullAuthPage" class="full-auth-screen hidden">
-    <div class="auth-art-glow glow-auth-1"></div>
-    <div class="auth-art-glow glow-auth-2"></div>
-    
-    <button class="auth-back-btn" onclick="toggleAuthPage(false)">
-      <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
-    </button>
-
-    <div class="auth-wrapper">
-      <div class="auth-brand-side">
-        <div class="logo">
-          <i class="fa-solid fa-circle-play logo-icon"></i>
-          <span class="logo-text">LUROVA <span class="highlight">OTT</span></span>
-        </div>
-        <h2>Access Your Premium <br/><span class="gradient-text">Subscription Portal</span></h2>
-        <p>Log in or create a new account to manage active digital subscriptions, view top-up histories, and enjoy 30% off across 20+ apps.</p>
-        
-        <div class="auth-perks">
-          <div class="perk-item"><i class="fa-solid fa-bolt"></i> Instant 15-Minute Activation</div>
-          <div class="perk-item"><i class="fa-solid fa-circle-check"></i> Safe & Passwordless Credentials</div>
-          <div class="perk-item"><i class="fa-solid fa-tag"></i> Flat 30% Discount Guaranteed</div>
-        </div>
-      </div>
-
-      <div class="auth-card-side glass-card">
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="loginTabBtn" onclick="switchAuthTab('login')">Login</button>
-          <button class="auth-tab" id="signupTabBtn" onclick="switchAuthTab('signup')">Create Account</button>
-        </div>
-
-        <form id="loginForm" class="auth-form" onsubmit="handleAuth(event, 'login')">
-          <div class="input-group">
-            <i class="fa-regular fa-envelope"></i>
-            <input type="email" id="loginEmail" placeholder="Email Address" required />
-          </div>
-          <div class="input-group">
-            <i class="fa-solid fa-lock"></i>
-            <input type="password" id="loginPassword" placeholder="Password" required />
-          </div>
-          <div class="auth-options">
-            <label><input type="checkbox" checked /> Remember Me</label>
-            <a href="#">Forgot Password?</a>
-          </div>
-          <button type="submit" class="btn btn-primary full-width">Sign In to Dashboard</button>
-        </form>
-
-        <form id="signupForm" class="auth-form hidden" onsubmit="handleAuth(event, 'signup')">
-          <div class="input-group">
-            <i class="fa-regular fa-user"></i>
-            <input type="text" id="signupName" placeholder="Full Name" required />
-          </div>
-          <div class="input-group">
-            <i class="fa-regular fa-envelope"></i>
-            <input type="email" id="signupEmail" placeholder="Email Address" required />
-          </div>
-          <div class="input-group">
-            <i class="fa-solid fa-mobile-screen"></i>
-            <input type="tel" id="signupPhone" placeholder="Mobile Number" required />
-          </div>
-          <div class="input-group">
-            <i class="fa-solid fa-lock"></i>
-            <input type="password" id="signupPassword" placeholder="Create Password" required />
-          </div>
-          <button type="submit" class="btn btn-primary full-width">Create Free Account</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
   <div class="settings-drawer" id="settingsDrawer">
     <div class="drawer-header">
       <h3><i class="fa-solid fa-sliders"></i> <span data-lang="settings_title">Web Settings</span></h3>
@@ -275,15 +208,18 @@
     </div>
     <div class="drawer-body">
       <div class="user-profile-summary">
-        <div class="avatar"><i class="fa-solid fa-user"></i></div>
+        <div class="avatar"><i class="fa-solid fa-circle-user"></i></div>
         <div class="user-details">
           <h4 id="profileName">Guest Visitor</h4>
-          <p id="profileEmail">Login to view profile settings</p>
+          <p id="profileEmail">Login via Lurova Account</p>
         </div>
       </div>
 
-      <div id="logoutContainer" class="hidden" style="margin-bottom: 1rem;">
-        <button class="btn btn-outline full-width" onclick="logoutUser()">
+      <div id="accountActionContainer" style="margin-bottom: 1rem;">
+        <button class="btn btn-primary full-width hidden" id="drawerLoginBtn" onclick="redirectToAccountPortal()">
+          <i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up
+        </button>
+        <button class="btn btn-outline full-width hidden" id="drawerLogoutBtn" onclick="logoutUser()">
           <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
       </div>
