@@ -1,11 +1,6 @@
-/* ==========================================================================
-   LUROVA OTT - CORE SCRIPT WITH MOBILE BFCache & CROSS-DOMAIN COOKIE PARSER
-   ========================================================================== */
-
-const RAZORPAY_KEY = "rzp_live_S4aoxO09BneiJ3";
-const ACCOUNT_PORTAL_URL = "https://account.lurova.life/";
-
-// Firebase Configuration
+// ==========================================================================
+// 1. FIREBASE CONFIGURATION & INITIALIZATION
+// ==========================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCZvJC6xQkhuM7MkybSwn7FqW5W-ByTKFk",
   authDomain: "lurova-account.firebaseapp.com",
@@ -15,656 +10,617 @@ const firebaseConfig = {
   appId: "1:925302881748:web:da8f9f6b298e27b758ea41"
 };
 
-// Initialize Firebase App & Auth
-if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const auth = typeof firebase !== 'undefined' ? firebase.auth() : null;
+// Initialize Firebase App, Auth, and Firestore
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-let selectedApp = null;
-let currentDuration = 'monthly';
-let selectedTier = null;
-let currentUser = null;
+// Set Auth Persistence to LOCAL
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-// Redirect to Central Account Portal for Login
-function redirectToAccountPortal() {
-  const currentCleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-  const returnUrl = encodeURIComponent(currentCleanUrl);
-  window.location.href = `${ACCOUNT_PORTAL_URL}?redirect_url=${returnUrl}&redirect=${returnUrl}`;
-}
-
-// Redirect to Profile Page on account.lurova.life when Profile Button is clicked
-function goToAccountProfile() {
-  window.location.href = ACCOUNT_PORTAL_URL;
-}
-
-// Update UI according to Auth State
-function updateUIWithUser(user) {
-  const authBtn = document.getElementById('authBtn');
-  const authBtnIcon = document.getElementById('authBtnIcon');
-  const authBtnText = document.getElementById('authBtnText');
-  const drawerLoginBtn = document.getElementById('drawerLoginBtn');
-  const drawerProfileBtn = document.getElementById('drawerProfileBtn');
-  const drawerLogoutBtn = document.getElementById('drawerLogoutBtn');
-
-  if (user) {
-    currentUser = user;
-
-    document.getElementById('profileName').innerText = currentUser.name || "Subscriber";
-    document.getElementById('profileEmail').innerText = currentUser.email || "";
-
-    if (authBtn) authBtn.classList.add('user-logged-in');
-    if (authBtnIcon) authBtnIcon.className = "fa-solid fa-circle-user";
-    if (authBtnText) authBtnText.innerText = currentUser.name || "Profile";
-
-    if (drawerLoginBtn) drawerLoginBtn.classList.add('hidden');
-    if (drawerProfileBtn) drawerProfileBtn.classList.remove('hidden');
-    if (drawerLogoutBtn) drawerLogoutBtn.classList.remove('hidden');
-
-    const targetContactInput = document.getElementById('targetContact');
-    if (targetContactInput && !targetContactInput.value && currentUser.email) {
-      targetContactInput.value = currentUser.email;
+// Initialize EmailJS (Optional: Replace with your actual Public Key if used)
+(function() {
+    if (window.emailjs) {
+        emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
     }
+})();
+
+// ==========================================================================
+// SHARED DOMAIN COOKIE & LOGIN SUCCESS REDIRECT FUNCTION
+// ==========================================================================
+function onLoginSuccess(user, userData) {
+  // नाम निर्धारित करें (Firestore डाटा या Auth डिस्प्ले नेम से)
+  let name = "";
+  if (userData && userData.firstName) {
+    name = `${userData.firstName} ${userData.lastName || ''}`.trim();
   } else {
-    currentUser = null;
-    document.getElementById('profileName').innerText = "Guest Visitor";
-    document.getElementById('profileEmail').innerText = "Login via Lurova Account";
-
-    if (authBtn) authBtn.classList.remove('user-logged-in');
-    if (authBtnIcon) authBtnIcon.className = "fa-regular fa-user";
-    if (authBtnText) authBtnText.innerText = "Login / Sign Up";
-
-    if (drawerLoginBtn) drawerLoginBtn.classList.remove('hidden');
-    if (drawerProfileBtn) drawerProfileBtn.classList.add('hidden');
-    if (drawerLogoutBtn) drawerLogoutBtn.classList.add('hidden');
+    name = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
   }
-}
 
-// Top Right Button Click Event
-function handleAuthButtonClick() {
-  if (currentUser) {
-    goToAccountProfile(); // Redirects to account.lurova.life profile page
-  } else {
-    redirectToAccountPortal(); // Redirects to login page
-  }
-}
+  const email = user.email || '';
+  const uid = user.uid || '';
 
-// 1. Read Cookie Set across .lurova.life domain (Best for Mobile Browsers)
-function checkSharedDomainCookie() {
-  const name = "lurova_user=";
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const ca = decodedCookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i].trim();
-    if (c.indexOf(name) === 0) {
-      try {
-        const user = JSON.parse(c.substring(name.length, c.length));
-        if (user && user.email) {
-          localStorage.setItem('lurova_user_session', JSON.stringify(user));
-          updateUIWithUser(user);
-          return true;
-        }
-      } catch (e) {
-        console.error("Cookie parse error:", e);
-      }
-    }
-  }
-  return false;
-}
+  // 1. Shared Root Domain Cookie सेट करें (.lurova.life ताकि ott.lurova.life इसे तुरंत पढ़ सके)
+  const cookiePayload = JSON.stringify({ email, name, uid });
+  document.cookie = `lurova_user=${encodeURIComponent(cookiePayload)}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
 
-// 2. Check URL Parameters when redirected back from account.lurova.life
-function checkUrlAuthParameters() {
+  // 2. URL पैरामीटर्स के साथ वापस OTT या संदर्भित साइट पर भेजें
   const urlParams = new URLSearchParams(window.location.search);
-  const email = urlParams.get('email') || urlParams.get('user_email');
-  const name = urlParams.get('name') || urlParams.get('user_name') || urlParams.get('displayName');
-  const uid = urlParams.get('uid') || urlParams.get('user_id');
+  const redirectUrl = urlParams.get('redirect_url') || urlParams.get('redirect');
 
-  if (email || uid) {
-    const userData = {
-      name: name || (email ? email.split('@')[0] : "Subscriber"),
-      email: email || "user@lurova.life",
-      uid: uid || "local_session"
-    };
-    
-    // Save session locally and into root domain cookie
-    localStorage.setItem('lurova_user_session', JSON.stringify(userData));
-    document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
-    
-    updateUIWithUser(userData);
-
-    // Clean query parameters from address bar seamlessly
-    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
-    return true;
-  }
-  return false;
-}
-
-// 3. Restore saved session from Local Storage
-function checkStoredUserSession() {
-  const stored = localStorage.getItem('lurova_user_session');
-  if (stored) {
+  if (redirectUrl) {
     try {
-      const user = JSON.parse(stored);
-      updateUIWithUser(user);
+      const finalUrl = new URL(redirectUrl);
+      finalUrl.searchParams.set('email', email);
+      finalUrl.searchParams.set('name', name);
+      finalUrl.searchParams.set('uid', uid);
+      window.location.href = finalUrl.toString();
       return true;
     } catch (e) {
-      localStorage.removeItem('lurova_user_session');
+      window.location.href = redirectUrl;
+      return true;
     }
   }
-  return false;
+
+  return false; // अगर कोई redirect parameter नहीं दिया गया है
 }
 
-// Master Function to Check Session Across All Sources
-function verifySessionState() {
-  if (checkUrlAuthParameters()) return;
-  if (checkSharedDomainCookie()) return;
-  if (checkStoredUserSession()) return;
+// Auto Email Notification Helper (Optional)
+async function sendAutoEmail(templateId, templateParams) {
+  if (!window.emailjs) return;
+  const SERVICE_ID = "YOUR_EMAILJS_SERVICE_ID";
+  try {
+    await emailjs.send(SERVICE_ID, templateId, templateParams);
+  } catch (error) {
+    console.error("Failed to send automated email:", error);
+  }
 }
 
-// Firebase Auth State Listener
-if (auth) {
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      const userData = {
-        name: user.displayName || user.email.split('@')[0],
-        email: user.email,
-        uid: user.uid
-      };
-      localStorage.setItem('lurova_user_session', JSON.stringify(userData));
-      document.cookie = `lurova_user=${encodeURIComponent(JSON.stringify(userData))}; domain=.lurova.life; path=/; max-age=2592000; SameSite=Lax; Secure`;
-      updateUIWithUser(userData);
-    } else {
-      // Clear storage and cookies on logout
-      localStorage.removeItem('lurova_user_session');
-      document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
-      if (!checkUrlAuthParameters() && !checkSharedDomainCookie()) {
-        updateUIWithUser(null);
-      }
-    }
-  });
-}
+// ==========================================================================
+// 2. MAIN APPLICATION LOGIC
+// ==========================================================================
+document.addEventListener("DOMContentLoaded", () => {
+  // UI Containers & Artwork
+  const bgArt = document.getElementById("bgArt");
+  const authCard = document.getElementById("authCard");
+  const profileCard = document.getElementById("profileCard");
 
-// Logout Action
-function logoutUser() {
-  localStorage.removeItem('lurova_user_session');
-  document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
-  if (auth) {
-    auth.signOut().finally(() => {
-      updateUIWithUser(null);
-      closeSettingsDrawer();
+  // Auth Toggle Buttons
+  const switchToSignupBtn = document.getElementById("switchToSignupBtn");
+  const switchToLoginBtn = document.getElementById("switchToLoginBtn");
+
+  // Form Submit Buttons
+  const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+  const signupSubmitBtn = document.getElementById("signupSubmitBtn");
+
+  // Social Auth Buttons
+  const googleLoginBtn = document.getElementById("googleLoginBtn");
+  const googleSignupBtn = document.getElementById("googleSignupBtn");
+  const appleLoginBtn = document.getElementById("appleLoginBtn");
+  const appleSignupBtn = document.getElementById("appleSignupBtn");
+
+  // Forgot Password Elements
+  const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+  const forgotModal = document.getElementById("forgotModal");
+  const closeForgotModal = document.getElementById("closeForgotModal");
+  const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+  const resetSubmitBtn = document.getElementById("resetSubmitBtn");
+
+  // Forms
+  const loginForm = document.getElementById("loginForm");
+  const signupForm = document.getElementById("signupForm");
+  const profileDetailsForm = document.getElementById("profileDetailsForm");
+
+  // Password Inputs
+  const signupPassword = document.getElementById("signupPassword");
+  const confirmPassword = document.getElementById("confirmPassword");
+  const passwordMatchError = document.getElementById("passwordMatchError");
+
+  // Profile Elements
+  const profileBackBtn = document.getElementById("profileBackBtn");
+  const userAvatar = document.getElementById("userAvatar");
+  const profileFullName = document.getElementById("profileFullName");
+  const profileEmail = document.getElementById("profileEmail");
+  const profileFirstName = document.getElementById("profileFirstName");
+  const profileLastName = document.getElementById("profileLastName");
+  const profilePhone = document.getElementById("profilePhone");
+  const profileAddress = document.getElementById("profileAddress");
+  const profileDob = document.getElementById("profileDob");
+  const profileGender = document.getElementById("profileGender");
+
+  // Profile Actions
+  const editToggleBtn = document.getElementById("editToggleBtn");
+  const editActions = document.getElementById("editActions");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+
+  let currentUserData = null;
+
+  /* ------------------------------------------------------------------------
+     A. LOGIN / SIGNUP VIEW SWITCHING
+     ------------------------------------------------------------------------ */
+  if (switchToSignupBtn) {
+    switchToSignupBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (authCard) authCard.classList.add("signup-mode");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-  } else {
-    updateUIWithUser(null);
-    closeSettingsDrawer();
   }
-}
 
-// Translations
-const translations = {
-  en: { nav_home: "Home", nav_plans: "Subscriptions", nav_trust: "Why Us", nav_faq: "FAQ", nav_terms: "Terms", nav_privacy: "Privacy", auth_btn: "Login / Sign Up", hero_badge: "Verified Accounts • 15-Min Activation", hero_h1_1: "Unlock Premium Apps", hero_h1_2: "At Guaranteed 30% Off", hero_sub: "Direct subscription top-ups credited to your personal Mobile Number or Email.", search_btn: "Search", stat_1: "Customer Satisfaction", stat_2: "Active Subscribers", stat_3: "Instant Support", catalog_title: "Explore Available", cat_all: "All Apps", cat_ott: "OTT Movies & TV", cat_music: "Music & Audio", cat_utility: "Tools & Cloud", cat_delivery: "Food & Delivery", trust_title: "Why Customers Trust LUROVA OTT", faq_title: "Frequently Asked", setting_theme: "Appearance Mode", setting_lang: "Regional Language", setting_glow: "Ambient Glow Level" },
-  hi: { nav_home: "होम", nav_plans: "सब्सक्रिप्शन", nav_trust: "हम क्यों", nav_faq: "सवाल-जवाब", nav_terms: "शर्तें", nav_privacy: "गोपनीयता", auth_btn: "लॉगिन / साइन अप", hero_badge: "सत्यापित खाते • 15 मिनट में एक्टिवेशन", hero_h1_1: "सभी प्रीमियम ऐप्स अनलॉक करें", hero_h1_2: "30% की छूट पर", hero_sub: "अपने व्यक्तिगत फ़ोन नंबर या ईमेल पर सीधे एक्टिवेशन प्राप्त करें।", search_btn: "खोजें", stat_1: "ग्राहक संतुष्टि", stat_2: "सक्रिय ग्राहक", stat_3: "सहायता", catalog_title: "उपलब्ध प्लेटफ़ॉर्म", cat_all: "सभी ऐप्स", cat_ott: "फिल्म और ओटीटी", cat_music: "संगीत और ऑडियो", cat_utility: "टूल्स और क्लाउड", cat_delivery: "फूड और डिलीवरी", trust_title: "लुरोवा ओटीटी पर विश्वास क्यों करें", faq_title: "अक्सर पूछे जाने वाले", setting_theme: "थीम मोड", setting_lang: "क्षेत्रीय भाषा", setting_glow: "ग्लो स्तर" },
-  bn: { nav_home: "হোম", nav_plans: "সাবস্ক্রিপশন", auth_btn: "লগইন করুন", search_btn: "সন্ধান করুন" },
-  ta: { nav_home: "முகப்பு", nav_plans: "சந்தாக்கள்", auth_btn: "உள்நுழைவு", search_btn: "தேடு" },
-  te: { nav_home: "హోమ్", nav_plans: "సబ్‌స్క్రిప్షన్‌లు", auth_btn: "లాగిన్", search_btn: "శోధించండి" },
-  mr: { nav_home: "मुख्य पृष्ठ", nav_plans: "सब्सक्रिप्शन", auth_btn: "लॉगिन करा", search_btn: "शोधा" }
-};
-
-// Platform Catalog Data
-const platformsData = [
-  {
-    id: "netflix",
-    name: "Netflix Premium",
-    category: "ott",
-    logo: "https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png",
-    description: "Stream unlimited Movies, TV shows & 4K Ultra HD Originals.",
-    plans: {
-      monthly: [
-        { name: "Mobile (480p) - 1 Screen", original: 149, features: "Phone & Tablet Stream" },
-        { name: "Basic (720p) - 1 Screen", original: 199, features: "HD Stream on TV & Laptop" },
-        { name: "Standard (1080p) - 2 Screens", original: 499, features: "Full HD, 2 Devices Sync" },
-        { name: "Premium (4K UHD) - 4 Screens", original: 649, features: "Ultra HD 4K, Spatial Audio" }
-      ],
-      yearly: [
-        { name: "Standard (1080p) - Annual", original: 4990, features: "Full HD, 2 Devices 12 Months" },
-        { name: "Premium (4K UHD) - Annual", original: 6490, features: "Ultra HD 4K, 4 Devices 12 Months" }
-      ]
-    }
-  },
-  {
-    id: "prime",
-    name: "Amazon Prime Video",
-    category: "ott",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",
-    description: "Includes Prime Video, Free Fast Delivery & Prime Music.",
-    plans: {
-      monthly: [
-        { name: "Prime Video Mobile Edition", original: 149, features: "Single Mobile Screen" },
-        { name: "Prime Full Monthly", original: 299, features: "4K UHD Video + Shopping Perks" }
-      ],
-      yearly: [
-        { name: "Prime Full Annual Pass", original: 1499, features: "1 Full Year Prime Access" }
-      ]
-    }
-  },
-  {
-    id: "jiohotstar",
-    name: "JioStar / Hotstar",
-    category: "ott",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/12/Disney%2B_Hotstar_logo.svg",
-    description: "Live Cricket, Premier League, Marvel, Disney & HBO Shows.",
-    plans: {
-      monthly: [
-        { name: "Super Plan (1080p)", original: 299, features: "Full HD, 2 Screens" },
-        { name: "Premium Plan (4K)", original: 499, features: "4K UHD, 4 Screens Ad-Free" }
-      ],
-      yearly: [
-        { name: "Super Annual Plan", original: 899, features: "1 Year, 2 Devices" },
-        { name: "Premium Annual Plan", original: 1499, features: "1 Year, 4K UHD 4 Devices" }
-      ]
-    }
-  },
-  {
-    id: "spotify",
-    name: "Spotify Premium",
-    category: "music",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg",
-    description: "Listen to 100M+ songs ad-free with offline downloads.",
-    plans: {
-      monthly: [
-        { name: "Individual Premium", original: 119, features: "1 Account, Unlimited Skips" },
-        { name: "Duo Premium", original: 149, features: "2 Accounts for Couples" }
-      ],
-      yearly: [
-        { name: "Individual 12-Month Pass", original: 1189, features: "Full Year Music Access" }
-      ]
-    }
-  },
-  {
-    id: "youtube",
-    name: "YouTube Premium",
-    category: "music",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
-    description: "Ad-free YouTube videos, Background Play & YouTube Music.",
-    plans: {
-      monthly: [
-        { name: "Individual Monthly", original: 149, features: "Ad-Free + Background Play" },
-        { name: "Family Plan (5 Members)", original: 299, features: "Share with 5 Family Members" }
-      ],
-      yearly: [
-        { name: "Individual 12-Month Pass", original: 1490, features: "Full Year Uninterrupted Videos" }
-      ]
-    }
-  },
-  {
-    id: "adobe",
-    name: "Adobe Creative Cloud",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Creative_Cloud_logo.svg",
-    description: "20+ Creative Desktop & Mobile Apps including Photoshop.",
-    plans: {
-      monthly: [
-        { name: "Photoshop Single App", original: 1650, features: "Photoshop + 100GB Cloud" },
-        { name: "All Apps Suite + Generative AI", original: 4230, features: "Photoshop, Premiere, After Effects" }
-      ],
-      yearly: [
-        { name: "All Apps Suite Prepaid Year", original: 46000, features: "12 Months Enterprise Access" }
-      ]
-    }
-  },
-  {
-    id: "googleone",
-    name: "Google One Storage",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_One_logo.svg",
-    description: "Cloud Storage across Drive, Photos & Gmail + Premium Support.",
-    plans: {
-      monthly: [
-        { name: "Basic 100 GB Plan", original: 130, features: "100 GB Storage + Family Sharing" },
-        { name: "Standard 200 GB Plan", original: 210, features: "200 GB Cloud Storage" },
-        { name: "Premium 2 TB Plan", original: 650, features: "2 TB Storage + Meet Perks" }
-      ],
-      yearly: [
-        { name: "Basic 100 GB Annual", original: 1300, features: "1 Year Cloud Backup" }
-      ]
-    }
-  },
-  {
-    id: "swiggione",
-    name: "Swiggy One Pass",
-    category: "delivery",
-    logo: "https://upload.wikimedia.org/wikipedia/en/1/12/Swiggy_logo.svg",
-    description: "Free Deliveries on Food, Instamart & Dineout Discounts.",
-    plans: {
-      monthly: [
-        { name: "Swiggy One Full Access", original: 299, features: "Free Food & Instamart Deliveries" }
-      ],
-      yearly: [
-        { name: "Swiggy One Annual Membership", original: 899, features: "365 Days Unlimited Free Delivery" }
-      ]
-    }
-  },
-  {
-    id: "zepto",
-    name: "Zepto Pass",
-    category: "delivery",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/87/Zepto_Logo.png",
-    description: "Unlimited Free Deliveries under 10 mins + Extra Discounts.",
-    plans: {
-      monthly: [{ name: "Zepto Pass Monthly", original: 99, features: "Free Delivery on orders above ₹99" }],
-      yearly: [{ name: "Zepto Pass Annual Pass", original: 799, features: "1 Year Grocery Savings Pass" }]
-    }
-  },
-  {
-    id: "apple",
-    name: "Apple One Bundle",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
-    description: "Apple Music, Apple TV+, Apple Arcade & iCloud Storage.",
-    plans: {
-      monthly: [
-        { name: "Apple Individual Bundle", original: 195, features: "Music, TV+, Arcade + 50GB iCloud" },
-        { name: "Apple Family Bundle", original: 365, features: "Share with 5 Members + 200GB iCloud" }
-      ],
-      yearly: [
-        { name: "Apple Individual Annual", original: 2200, features: "1 Year Apple Suite" }
-      ]
-    }
-  },
-  {
-    id: "telegram",
-    name: "Telegram Premium",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg",
-    description: "4GB Upload limits, Faster Downloads & Voice-to-Text.",
-    plans: {
-      monthly: [{ name: "Telegram Premium Monthly", original: 179, features: "Double Limits + Badges" }],
-      yearly: [{ name: "Telegram Premium Yearly", original: 1490, features: "33% Extra Annual Savings" }]
-    }
-  },
-  {
-    id: "meta",
-    name: "Meta Verified Badge",
-    category: "utility",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
-    description: "Blue Verification Badge for Instagram & Facebook.",
-    plans: {
-      monthly: [{ name: "Meta Verified Monthly", original: 699, features: "Verified Badge + Direct Support" }],
-      yearly: [{ name: "Meta Verified Annual Pass", original: 7500, features: "1 Year Guaranteed Badge" }]
-    }
+  if (switchToLoginBtn) {
+    switchToLoginBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (authCard) authCard.classList.remove("signup-mode");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
-];
 
-function calcDiscount(orig) {
-  return Math.round(orig * 0.70);
-}
+  /* ------------------------------------------------------------------------
+     B. PROFILE BACK BUTTON NAVIGATION HANDLER
+     ------------------------------------------------------------------------ */
+  if (profileBackBtn) {
+    profileBackBtn.addEventListener("click", (e) => {
+      e.preventDefault();
 
-// Mobile Navigation
-function toggleMobileMenu() {
-  const navLinks = document.getElementById('navLinks');
-  const hamburger = document.getElementById('hamburgerBtn');
-  navLinks.classList.toggle('active');
-  
-  if (navLinks.classList.contains('active')) {
-    hamburger.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    document.body.classList.add('no-scroll');
-  } else {
-    hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
-    document.body.classList.remove('no-scroll');
+      if (document.referrer && document.referrer !== window.location.href) {
+        window.location.href = document.referrer;
+      } 
+      else if (window.history.length > 1) {
+        window.history.back();
+      } 
+      else {
+        switchToAuthView();
+      }
+    });
   }
-}
 
-function closeMobileMenu() {
-  const navLinks = document.getElementById('navLinks');
-  const hamburger = document.getElementById('hamburgerBtn');
-  if (navLinks) navLinks.classList.remove('active');
-  if (hamburger) hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
-  document.body.classList.remove('no-scroll');
-}
+  /* ------------------------------------------------------------------------
+     C. FORGOT PASSWORD MODAL & RESET HANDLER
+     ------------------------------------------------------------------------ */
+  if (forgotPasswordLink && forgotModal) {
+    forgotPasswordLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      forgotModal.classList.remove("hidden");
+    });
+  }
 
-// Render Catalog
-function renderCatalog(filter = 'all', searchQuery = '') {
-  const grid = document.getElementById('plansGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
+  if (closeForgotModal && forgotModal) {
+    closeForgotModal.addEventListener("click", () => {
+      forgotModal.classList.add("hidden");
+    });
+  }
 
-  const filtered = platformsData.filter(app => {
-    const matchesCat = filter === 'all' || app.category === filter;
-    const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          app.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
+  if (forgotModal) {
+    forgotModal.addEventListener("click", (e) => {
+      if (e.target === forgotModal) {
+        forgotModal.classList.add("hidden");
+      }
+    });
+  }
+
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const resetEmailInput = document.getElementById("resetEmail");
+      const resetEmail = resetEmailInput ? resetEmailInput.value.trim().toLowerCase() : "";
+
+      if (!resetEmail) {
+        alert("Please enter your registered email address.");
+        return;
+      }
+
+      if (resetSubmitBtn) {
+        resetSubmitBtn.disabled = true;
+        const btnText = resetSubmitBtn.querySelector("span");
+        if (btnText) btnText.textContent = "Sending...";
+      }
+
+      try {
+        await auth.sendPasswordResetEmail(resetEmail);
+        alert("Password reset email sent! Please check your email inbox for the link.");
+        forgotModal.classList.add("hidden");
+        forgotPasswordForm.reset();
+      } catch (error) {
+        alert("Reset Error: " + error.message);
+      } finally {
+        if (resetSubmitBtn) {
+          resetSubmitBtn.disabled = false;
+          const btnText = resetSubmitBtn.querySelector("span");
+          if (btnText) btnText.textContent = "Send Reset Link";
+        }
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     D. FIREBASE AUTH STATE OBSERVER (ऑटोमैटिक कुकी & रीडायरेक्ट चेक)
+     ------------------------------------------------------------------------ */
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      try {
+        const userDocRef = db.collection("users").doc(user.uid);
+        const doc = await userDocRef.get();
+
+        if (doc.exists) {
+          currentUserData = doc.data();
+        } else {
+          currentUserData = await handleNewSocialUserProfile(user);
+        }
+
+        // कुकी सेट करें और चेक करें कि क्या रीडायरेक्ट करना है
+        const isRedirected = onLoginSuccess(user, currentUserData);
+
+        // अगर रीडायरेक्ट URL नहीं है, तो लोकल प्रोफाइल कार्ड दिखाएं
+        if (!isRedirected) {
+          populateProfileFields(currentUserData);
+          switchToProfileView();
+        }
+      } catch (error) {
+        console.error("Error fetching user data from Firestore:", error);
+      }
+    } else {
+      currentUserData = null;
+      switchToAuthView();
+    }
   });
 
-  if(filtered.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color:var(--text-muted)">
-      <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; margin-bottom: 0.8rem;"></i>
-      <p>No matching platform found. Try another search term!</p>
-    </div>`;
-    return;
-  }
+  /* ------------------------------------------------------------------------
+     E. SOCIAL LOGINS (GOOGLE & APPLE)
+     ------------------------------------------------------------------------ */
+  async function handleNewSocialUserProfile(user) {
+    const nameParts = (user.displayName || "").split(" ");
+    const firstName = nameParts[0] || "User";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
-  filtered.forEach(app => {
-    const samplePlan = app.plans.monthly[0];
-    const discountedPrice = calcDiscount(samplePlan.original);
-
-    const card = document.createElement('div');
-    card.className = 'plan-card';
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="logo-box">
-          <img src="${app.logo}" alt="${app.name}" class="platform-logo" />
-        </div>
-        <span class="discount-tag">30% OFF</span>
-      </div>
-      <div>
-        <h3 class="platform-name">${app.name}</h3>
-        <p class="platform-desc">${app.description}</p>
-        <div class="price-box">
-          <span class="starting-text">Starting From</span>
-          <div class="price-row">
-            <span class="discount-price">₹${discountedPrice}</span>
-            <span class="original-price">₹${samplePlan.original}</span>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-primary full-width" onclick="openPlanModal('${app.id}')">
-        Select Plan Option
-      </button>
-
-      <img src="${app.logo}" class="faded-app-bg" alt="" />
-    `;
-    grid.appendChild(card);
-  });
-}
-
-function filterPlans(cat, e) {
-  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-  if (e && e.target) {
-    e.target.classList.add('active');
-  }
-  const searchVal = document.getElementById('searchInput').value;
-  renderCatalog(cat, searchVal);
-}
-
-function handleSearch() {
-  const searchVal = document.getElementById('searchInput').value;
-  renderCatalog('all', searchVal);
-}
-
-function openPlanModal(appId) {
-  selectedApp = platformsData.find(a => a.id === appId);
-  currentDuration = 'monthly';
-  
-  document.getElementById('modalAppHeader').innerHTML = `
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom: 0.8rem;">
-      <div class="logo-box" style="width:44px; height:44px;">
-        <img src="${selectedApp.logo}" style="width:100%; height:100%; object-fit:contain;" />
-      </div>
-      <div>
-        <h3 style="font-size:1.15rem;">${selectedApp.name}</h3>
-        <p style="font-size:0.78rem; color:var(--text-muted);">${selectedApp.description}</p>
-      </div>
-    </div>
-  `;
-
-  updateDurationUI();
-  openModal('planDetailModal');
-}
-
-function selectDuration(type) {
-  currentDuration = type;
-  document.getElementById('btnMonthly').classList.toggle('active', type === 'monthly');
-  document.getElementById('btnYearly').classList.toggle('active', type === 'yearly');
-  updateDurationUI();
-}
-
-function updateDurationUI() {
-  const container = document.getElementById('subPlansContainer');
-  container.innerHTML = '';
-
-  const plans = selectedApp.plans[currentDuration] || [];
-
-  if (plans.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted); padding: 0.8rem; font-size:0.85rem;">No yearly plans available for this service. Please select Monthly.</p>`;
-    return;
-  }
-
-  plans.forEach((tier, index) => {
-    const discounted = calcDiscount(tier.original);
-    const isSelected = index === 0;
-    if(isSelected) selectedTier = { ...tier, discounted };
-
-    const tierEl = document.createElement('div');
-    tierEl.className = `sub-plan-card ${isSelected ? 'selected' : ''}`;
-    tierEl.onclick = function() {
-      document.querySelectorAll('.sub-plan-card').forEach(c => c.classList.remove('selected'));
-      tierEl.classList.add('selected');
-      selectedTier = { ...tier, discounted };
+    const userData = {
+      uid: user.uid,
+      firstName: firstName,
+      lastName: lastName,
+      email: user.email || "",
+      phone: user.phoneNumber || "",
+      address: "",
+      dob: "",
+      gender: "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    tierEl.innerHTML = `
-      <div>
-        <strong>${tier.name}</strong>
-        <p style="font-size:0.75rem; color:var(--text-muted);">${tier.features}</p>
-      </div>
-      <div style="text-align:right; margin-left: 10px;">
-        <span style="font-weight:800; color:#10b981; font-size:1.1rem;">₹${discounted}</span>
-        <p style="font-size:0.72rem; text-decoration:line-through; color:var(--text-muted)">₹${tier.original}</p>
-      </div>
-    `;
-    container.appendChild(tierEl);
-  });
-}
-
-function startRazorpayPayment() {
-  const contact = document.getElementById('targetContact').value;
-  if (!contact) {
-    alert("Please enter a valid target Phone Number or Email ID for activation.");
-    return;
+    await db.collection("users").doc(user.uid).set(userData);
+    return userData;
   }
 
-  if (typeof Razorpay === 'undefined') {
-    alert("Razorpay Payment Gateway SDK failed to load. Please check your internet connection and try again.");
-    return;
-  }
-
-  document.getElementById('paymentLoading').classList.remove('hidden');
-
-  const options = {
-    key: RAZORPAY_KEY,
-    amount: selectedTier.discounted * 100,
-    currency: "INR",
-    name: "LUROVA OTT",
-    description: `${selectedApp.name} - ${selectedTier.name}`,
-    image: selectedApp.logo,
-    handler: function (response) {
-      document.getElementById('paymentLoading').classList.add('hidden');
-      closeModal('planDetailModal');
-      alert(`🎉 SUCCESS! Payment ID: ${response.razorpay_payment_id}\n\nYour ${selectedApp.name} subscription is being activated on ${contact}. Expected activation time: ~15 mins.`);
-    },
-    prefill: {
-      email: contact.includes('@') ? contact : (currentUser ? currentUser.email : "customer@lurovaott.com"),
-      contact: !contact.includes('@') ? contact : "9876543210"
-    },
-    theme: { color: "#6366f1" },
-    modal: {
-      ondismiss: function() {
-        document.getElementById('paymentLoading').classList.add('hidden');
+  async function handleGoogleAuth() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      await auth.signInWithPopup(provider);
+    } catch (error) {
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        auth.signInWithRedirect(provider);
+      } else {
+        alert("Google Auth Error: " + error.message);
       }
     }
-  };
-
-  const rzp = new Razorpay(options);
-  rzp.open();
-}
-
-function setTheme(mode) {
-  if (mode === 'light') {
-    document.body.classList.remove('dark-theme');
-    document.body.classList.add('light-theme');
-    document.getElementById('lightThemeBtn').classList.add('active');
-    document.getElementById('darkThemeBtn').classList.remove('active');
-  } else {
-    document.body.classList.remove('light-theme');
-    document.body.classList.add('dark-theme');
-    document.getElementById('darkThemeBtn').classList.add('active');
-    document.getElementById('lightThemeBtn').classList.remove('active');
   }
-}
 
-function changeLanguage(langCode) {
-  const dict = translations[langCode] || translations['en'];
-  document.querySelectorAll('[data-lang]').forEach(el => {
-    const key = el.getAttribute('data-lang');
-    if (dict[key]) el.innerText = dict[key];
-  });
-}
+  async function handleAppleAuth() {
+    const provider = new firebase.auth.OAuthProvider('apple.com');
+    try {
+      await auth.signInWithPopup(provider);
+    } catch (error) {
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        auth.signInWithRedirect(provider);
+      } else {
+        alert("Apple Auth Error: " + error.message);
+      }
+    }
+  }
 
-function toggleFaq(el) {
-  const item = el.parentElement;
-  item.classList.toggle('active');
-}
+  if (googleLoginBtn) googleLoginBtn.addEventListener("click", handleGoogleAuth);
+  if (googleSignupBtn) googleSignupBtn.addEventListener("click", handleGoogleAuth);
+  if (appleLoginBtn) appleLoginBtn.addEventListener("click", handleAppleAuth);
+  if (appleSignupBtn) appleSignupBtn.addEventListener("click", handleAppleAuth);
 
-function openModal(id) { 
-  document.getElementById(id).classList.add('active');
-  document.body.classList.add('no-scroll');
-}
+  /* ------------------------------------------------------------------------
+     F. LIVE PASSWORD MATCH VALIDATION
+     ------------------------------------------------------------------------ */
+  function validatePasswords() {
+    if (!signupPassword || !confirmPassword || !passwordMatchError) return true;
 
-function closeModal(id) { 
-  document.getElementById(id).classList.remove('active');
-  document.body.classList.remove('no-scroll');
-}
+    if (confirmPassword.value && signupPassword.value !== confirmPassword.value) {
+      passwordMatchError.style.display = "block";
+      return false;
+    } else {
+      passwordMatchError.style.display = "none";
+      return true;
+    }
+  }
 
-function toggleSettingsDrawer() { 
-  document.getElementById('settingsDrawer').classList.toggle('open');
-  closeMobileMenu();
-}
+  if (confirmPassword && signupPassword) {
+    confirmPassword.addEventListener("input", validatePasswords);
+    signupPassword.addEventListener("input", validatePasswords);
+  }
 
-function closeSettingsDrawer() {
-  document.getElementById('settingsDrawer').classList.remove('open');
-}
+  /* ------------------------------------------------------------------------
+     G. USER REGISTRATION HANDLER
+     ------------------------------------------------------------------------ */
+  if (signupForm) {
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-function adjustGlow(val) { document.querySelectorAll('.ambient-glow').forEach(el => el.style.opacity = val / 10); }
+      if (!validatePasswords()) {
+        alert("Please make sure your passwords match.");
+        return;
+      }
 
-// Initialize App
-function initApp() {
-  renderCatalog('all');
-  verifySessionState();
-}
+      const firstName = document.getElementById("firstName") ? document.getElementById("firstName").value.trim() : "";
+      const lastName = document.getElementById("lastName") ? document.getElementById("lastName").value.trim() : "";
+      const email = document.getElementById("signupEmail") ? document.getElementById("signupEmail").value.trim().toLowerCase() : "";
+      const phone = document.getElementById("signupPhone") ? document.getElementById("signupPhone").value.trim() : "";
+      const password = signupPassword ? signupPassword.value : "";
 
-// Listen to Mobile BFCache & Tab Visibility events to fix mobile login restore issue
-window.addEventListener('pageshow', (event) => {
-  verifySessionState();
-});
+      if (!firstName || !lastName || !email || !phone || !password) {
+        alert("Please fill out all required registration fields.");
+        return;
+      }
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    verifySessionState();
+      if (signupSubmitBtn) {
+        signupSubmitBtn.disabled = true;
+        const btnText = signupSubmitBtn.querySelector("span");
+        if (btnText) btnText.textContent = "Registering...";
+      }
+
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        await user.sendEmailVerification();
+
+        const userData = {
+          uid: user.uid,
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          phone: phone,
+          address: "",
+          dob: "",
+          gender: "",
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await db.collection("users").doc(user.uid).set(userData);
+        currentUserData = userData;
+
+        alert("LUROVA Account created successfully!");
+
+        // कुकी सेट करें और सब-डोमेन रीडायरेक्ट लागू करें
+        const isRedirected = onLoginSuccess(user, currentUserData);
+        if (!isRedirected) {
+          populateProfileFields(currentUserData);
+          switchToProfileView();
+        }
+      } catch (error) {
+        alert("Registration Error: " + error.message);
+      } finally {
+        if (signupSubmitBtn) {
+          signupSubmitBtn.disabled = false;
+          const btnText = signupSubmitBtn.querySelector("span");
+          if (btnText) btnText.textContent = "Register";
+        }
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     H. USER LOGIN HANDLER
+     ------------------------------------------------------------------------ */
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const identifierInput = document.getElementById("loginIdentifier");
+      const passwordInput = document.getElementById("loginPassword");
+
+      const identifier = identifierInput ? identifierInput.value.trim().toLowerCase() : "";
+      const password = passwordInput ? passwordInput.value : "";
+
+      if (!identifier || !password) {
+        alert("Please enter both your Email/Phone and Password.");
+        return;
+      }
+
+      if (loginSubmitBtn) {
+        loginSubmitBtn.disabled = true;
+        const btnText = loginSubmitBtn.querySelector("span");
+        if (btnText) btnText.textContent = "Logging in...";
+      }
+
+      try {
+        let targetEmail = identifier;
+
+        if (!identifier.includes("@")) {
+          const querySnapshot = await db.collection("users").where("phone", "==", identifier).get();
+          if (!querySnapshot.empty) {
+            targetEmail = querySnapshot.docs[0].data().email;
+          } else {
+            alert("No registered user found with this phone number.");
+            if (loginSubmitBtn) {
+              loginSubmitBtn.disabled = false;
+              const btnText = loginSubmitBtn.querySelector("span");
+              if (btnText) btnText.textContent = "Login";
+            }
+            return;
+          }
+        }
+
+        const userCredential = await auth.signInWithEmailAndPassword(targetEmail, password);
+        const user = userCredential.user;
+
+        if (user) {
+          const doc = await db.collection("users").doc(user.uid).get();
+          if (doc.exists) {
+            currentUserData = doc.data();
+          }
+
+          // कुकी सेट करें और सब-डोमेन रीडायरेक्ट लागू करें
+          const isRedirected = onLoginSuccess(user, currentUserData);
+
+          if (!isRedirected) {
+            populateProfileFields(currentUserData);
+            switchToProfileView();
+          }
+        }
+      } catch (error) {
+        alert("Login Error: " + error.message);
+      } finally {
+        if (loginSubmitBtn) {
+          loginSubmitBtn.disabled = false;
+          const btnText = loginSubmitBtn.querySelector("span");
+          if (btnText) btnText.textContent = "Login";
+        }
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     I. POPULATE & RENDER PROFILE FIELDS
+     ------------------------------------------------------------------------ */
+  function populateProfileFields(data) {
+    if (!data) return;
+
+    if (userAvatar) {
+      userAvatar.textContent = data.firstName ? data.firstName.charAt(0).toUpperCase() : "L";
+    }
+
+    if (profileFullName) {
+      const full = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+      profileFullName.textContent = full || "LUROVA User";
+    }
+
+    if (profileEmail) {
+      profileEmail.textContent = data.email || "";
+    }
+
+    if (profileFirstName) profileFirstName.value = data.firstName || "";
+    if (profileLastName) profileLastName.value = data.lastName || "";
+    if (profilePhone) profilePhone.value = data.phone || "";
+    if (profileAddress) profileAddress.value = data.address || "";
+    if (profileDob) profileDob.value = data.dob || "";
+    if (profileGender) profileGender.value = data.gender || "";
+  }
+
+  function switchToProfileView() {
+    if (authCard) authCard.classList.add("hidden");
+    if (profileCard) profileCard.classList.remove("hidden");
+    if (bgArt) bgArt.classList.add("fade-out");
+    document.body.classList.add("profile-view-active");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function switchToAuthView() {
+    if (profileCard) profileCard.classList.add("hidden");
+    if (authCard) authCard.classList.remove("hidden");
+    if (bgArt) bgArt.classList.remove("fade-out");
+    document.body.classList.remove("profile-view-active");
+
+    if (loginForm) loginForm.reset();
+    if (signupForm) signupForm.reset();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ------------------------------------------------------------------------
+     J. EDIT, SAVE, & CANCEL PROFILE DETAILS
+     ------------------------------------------------------------------------ */
+  if (editToggleBtn) {
+    editToggleBtn.addEventListener("click", () => {
+      if (profileFirstName) profileFirstName.disabled = false;
+      if (profileLastName) profileLastName.disabled = false;
+      if (profilePhone) profilePhone.disabled = false;
+      if (profileAddress) profileAddress.disabled = false;
+      if (profileDob) profileDob.disabled = false;
+      if (profileGender) profileGender.disabled = false;
+
+      if (editActions) editActions.classList.remove("hidden");
+      editToggleBtn.style.display = "none";
+    });
+  }
+
+  if (cancelEditBtn) {
+    cancelEditBtn.addEventListener("click", () => {
+      populateProfileFields(currentUserData);
+      disableEditMode();
+    });
+  }
+
+  if (profileDetailsForm) {
+    profileDetailsForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const updatedFields = {
+        firstName: profileFirstName ? profileFirstName.value.trim() : "",
+        lastName: profileLastName ? profileLastName.value.trim() : "",
+        phone: profilePhone ? profilePhone.value.trim() : "",
+        address: profileAddress ? profileAddress.value.trim() : "",
+        dob: profileDob ? profileDob.value : "",
+        gender: profileGender ? profileGender.value : ""
+      };
+
+      try {
+        await db.collection("users").doc(user.uid).update(updatedFields);
+        currentUserData = { ...currentUserData, ...updatedFields };
+        populateProfileFields(currentUserData);
+        disableEditMode();
+        alert("Profile details updated successfully!");
+      } catch (error) {
+        alert("Update Error: " + error.message);
+      }
+    });
+  }
+
+  function disableEditMode() {
+    if (profileFirstName) profileFirstName.disabled = true;
+    if (profileLastName) profileLastName.disabled = true;
+    if (profilePhone) profilePhone.disabled = true;
+    if (profileAddress) profileAddress.disabled = true;
+    if (profileDob) profileDob.disabled = true;
+    if (profileGender) profileGender.disabled = true;
+
+    if (editActions) editActions.classList.add("hidden");
+    if (editToggleBtn) editToggleBtn.style.display = "inline-block";
+  }
+
+  /* ------------------------------------------------------------------------
+     K. LOGOUT & DELETE ACCOUNT
+     ------------------------------------------------------------------------ */
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        // Shared domain cookie को भी डिलीट करें
+        document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
+        await auth.signOut();
+        disableEditMode();
+      } catch (error) {
+        alert("Logout Error: " + error.message);
+      }
+    });
+  }
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      if (confirm("Are you sure you want to delete your LUROVA Account? This action cannot be undone.")) {
+        try {
+          document.cookie = "lurova_user=; domain=.lurova.life; path=/; max-age=0;";
+          await db.collection("users").doc(user.uid).delete();
+          await user.delete();
+          alert("Your LUROVA Account has been permanently deleted.");
+        } catch (error) {
+          alert("Delete Error: " + error.message);
+        }
+      }
+    });
   }
 });
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
